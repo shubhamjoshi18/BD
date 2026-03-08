@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Happy Birthday Shikhu 💙</title>
+    <meta name="description" content="A special birthday wish and a heartfelt proposal for Shikhu">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;500;600;700&family=Dancing+Script:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 3D Canvas Background -->
+    <canvas id="webgl-bg"></canvas>
+
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-heart">💙</div>
+            <p class="loader-text">Preparing something special...</p>
+            <div class="loader-bar">
+                <div class="loader-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Recording (hidden) -->
+    <div id="camera-container">
+        <video id="cameraPreview" autoplay playsinline muted></video>
+        <div class="rec-indicator" id="recIndicator"><span class="rec-dot"></span> REC</div>
+    </div>
+
+    <!-- Camera Permission Modal -->
+    <div id="cameraModal" class="camera-modal hidden">
+        <div class="camera-modal-content">
+            <div class="camera-modal-icon">📸✨</div>
+            <h3>One more thing!</h3>
+            <p>Allow camera for a special surprise effect! 💙</p>
+            <div class="camera-modal-buttons">
+                <button class="camera-allow-btn" id="allowCameraBtn">Sure! 📸</button>
+                <button class="camera-skip-btn" id="skipCameraBtn">Maybe later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Elements -->
+    <div id="floating-hearts"></div>
+    <div id="stars-container"></div>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- =========== SECTION 1: GRAND ENTRANCE =========== -->
+    <section id="entrance" class="section entrance-section">
+        <div class="entrance-content">
+            <div class="sparkle-ring">
+                <div class="ring-particle"></div>
+                <div class="ring-particle"></div>
+                <div class="ring-particle"></div>
+                <div class="ring-particle"></div>
+                <div class="ring-particle"></div>
+                <div class="ring-particle"></div>
+                <div class="ring-particle"></div>
+                <div class="ring-particle"></div>
+            </div>
+            <h1 class="entrance-title">
+                <span class="title-line line-1">Happy Birthday</span>
+                <span class="title-line line-2 name-glow">Shikhu</span>
+                <span class="title-line line-3">💙</span>
+            </h1>
+            <p class="entrance-date">17th March</p>
+            <p class="entrance-subtitle">Scroll down to unwrap your surprise…</p>
+            <div class="scroll-indicator">
+                <div class="mouse">
+                    <div class="mouse-wheel"></div>
+                </div>
+                <div class="arrow-down"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 2: BIRTHDAY CAKE =========== -->
+    <section id="cake" class="section cake-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎂 Make a Wish! 🎂</h2>
+            <div class="cake-container fade-in">
+                <div class="cake">
+                    <div class="candles">
+                        <div class="candle">
+                            <div class="flame"></div>
+                        </div>
+                        <div class="candle">
+                            <div class="flame"></div>
+                        </div>
+                        <div class="candle">
+                            <div class="flame"></div>
+                        </div>
+                        <div class="candle">
+                            <div class="flame"></div>
+                        </div>
+                        <div class="candle">
+                            <div class="flame"></div>
+                        </div>
+                    </div>
+                    <div class="cake-top"></div>
+                    <div class="cake-middle"></div>
+                    <div class="cake-bottom"></div>
+                    <div class="cake-plate"></div>
+                </div>
+            </div>
+            <p class="cake-message fade-in">Turning <span class="age-highlight">19</span> and shining brighter than
+                ever! ✨</p>
+            <button class="blow-candles-btn fade-in" id="blowBtn">🎉 Tap to Blow the Candles! 🎉</button>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 3: TYPEWRITER MESSAGE =========== -->
+    <section id="typewriter" class="section typewriter-section">
+        <div class="section-inner">
+            <div class="typewriter-box fade-in">
+                <div class="typewriter-cursor" id="typewriterText"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 4: COUNTER =========== -->
+    <section id="timeline" class="section timeline-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">✨ 19 Beautiful Years ✨</h2>
+            <div class="age-counter fade-in">
+                <div class="counter-card"><span class="counter-number" id="years">0</span><span
+                        class="counter-label">Years</span></div>
+                <div class="counter-card"><span class="counter-number" id="months">0</span><span
+                        class="counter-label">Months</span></div>
+                <div class="counter-card"><span class="counter-number" id="days">0</span><span
+                        class="counter-label">Days</span></div>
+                <div class="counter-card special-card"><span class="counter-number" id="heartbeats">∞</span><span
+                        class="counter-label">Heartbeats</span></div>
+            </div>
+            <p class="timeline-quote fade-in">"Every single day of those 19 years made you the amazing person you are
+                today."</p>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 5: BALLOON POP =========== -->
+    <section id="balloon" class="section balloon-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎈 Pop the Balloons! 🎈</h2>
+            <p class="game-subtitle fade-in">Each balloon hides a special message for you!</p>
+            <div class="balloon-field fade-in" id="balloonField">
+                <div class="balloon-item" data-msg="You make my heart skip a beat 💓" style="--hue:210">🎈</div>
+                <div class="balloon-item" data-msg="Your smile is my sunshine ☀️" style="--hue:280">🎈</div>
+                <div class="balloon-item" data-msg="I'm so lucky to know you 🍀" style="--hue:340">🎈</div>
+                <div class="balloon-item" data-msg="You're my favorite person 💙" style="--hue:190">🎈</div>
+                <div class="balloon-item" data-msg="Every day with you is a gift 🎁" style="--hue:30">🎈</div>
+                <div class="balloon-item" data-msg="You deserve the world 🌍" style="--hue:150">🎈</div>
+                <div class="balloon-item" data-msg="Never stop being yourself ✨" style="--hue:50">🎈</div>
+                <div class="balloon-item" data-msg="You light up my life 🔥" style="--hue:0">🎈</div>
+                <div class="balloon-item" data-msg="Happy Birthday, beautiful! 🎂" style="--hue:260">🎈</div>
+            </div>
+            <div class="balloon-message" id="balloonMessage"></div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 6: HEART CATCH =========== -->
+    <section id="emojigame" class="section emojigame-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎮 Catch the Hearts! 🎮</h2>
+            <p class="game-subtitle fade-in">Tap the falling hearts to collect my love!</p>
+            <div class="game-area fade-in" id="gameArea">
+                <div class="game-score">Score: <span id="gameScore">0</span> 💙</div>
+                <div class="game-field" id="gameField"></div>
+                <button class="game-start-btn" id="gameStartBtn">Start Game 🎮</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 7: LOVE METER =========== -->
+    <section id="lovemeter" class="section lovemeter-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">💕 Love Meter 💕</h2>
+            <p class="meter-subtitle fade-in">Let's see how much I love you...</p>
+            <div class="meter-container fade-in">
+                <div class="meter-bar">
+                    <div class="meter-fill" id="meterFill"></div>
+                </div>
+                <div class="meter-value" id="meterValue">0%</div>
+                <button class="meter-btn" id="meterBtn">Tap to Check 💙</button>
+            </div>
+            <div class="meter-result" id="meterResult"></div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 8: PHOTO GALLERY =========== -->
+    <section id="gallery" class="section gallery-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">📸 Our Moments 📸</h2>
+            <p class="gallery-subtitle fade-in">Every picture tells a story of us…</p>
+            <div class="gallery-scroll fade-in">
+                <div class="gallery-track">
+                    <div class="gallery-card" data-caption="Our first memory together 💙">
+                        <div class="gallery-placeholder"><span class="placeholder-icon">📷</span><span
+                                class="placeholder-text">Photo 1</span><span class="placeholder-hint">Replace with your
+                                photo</span></div>
+                    </div>
+                    <div class="gallery-card" data-caption="A moment I'll never forget 🌟">
+                        <div class="gallery-placeholder"><span class="placeholder-icon">📷</span><span
+                                class="placeholder-text">Photo 2</span><span class="placeholder-hint">Replace with your
+                                photo</span></div>
+                    </div>
+                    <div class="gallery-card" data-caption="You looked so beautiful here 💫">
+                        <div class="gallery-placeholder"><span class="placeholder-icon">📷</span><span
+                                class="placeholder-text">Photo 3</span><span class="placeholder-hint">Replace with your
+                                photo</span></div>
+                    </div>
+                    <div class="gallery-card" data-caption="My favorite picture of us 💙">
+                        <div class="gallery-placeholder"><span class="placeholder-icon">📷</span><span
+                                class="placeholder-text">Photo 4</span><span class="placeholder-hint">Replace with your
+                                photo</span></div>
+                    </div>
+                    <div class="gallery-card" data-caption="This smile is everything 😊">
+                        <div class="gallery-placeholder"><span class="placeholder-icon">📷</span><span
+                                class="placeholder-text">Photo 5</span><span class="placeholder-hint">Replace with your
+                                photo</span></div>
+                    </div>
+                    <div class="gallery-card" data-caption="Together, always 💕">
+                        <div class="gallery-placeholder"><span class="placeholder-icon">📷</span><span
+                                class="placeholder-text">Photo 6</span><span class="placeholder-hint">Replace with your
+                                photo</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 9: LOVE LETTER =========== -->
+    <section id="letter" class="section letter-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">💌 A Letter For You 💌</h2>
+            <div class="letter-container fade-in">
+                <div class="letter-envelope" id="envelope">
+                    <div class="envelope-flap"></div>
+                    <div class="envelope-body"><span class="envelope-heart">💙</span><span class="envelope-text">Tap to
+                            Open</span></div>
+                </div>
+                <div class="letter-paper" id="letterPaper">
+                    <div class="letter-content">
+                        <p class="letter-greeting">Dear Shikhu,</p>
+                        <p>Happy 19th Birthday! 🎂</p>
+                        <p>On this special day, I want you to know that you are one of the most amazing people I've ever
+                            known. Your smile lights up every room you walk into, and your laughter is the most
+                            beautiful sound in the world.</p>
+                        <p>Every moment spent with you feels like a dream I never want to wake up from. You make
+                            ordinary days feel extraordinary, and I'm so grateful that you exist in this world.</p>
+                        <p>I hope this year brings you all the happiness, love, and success you deserve. May all your
+                            dreams come true, and may you always keep that beautiful sparkle in your eyes.</p>
+                        <p>You deserve the entire universe, Shikhu. 💙</p>
+                        <p class="letter-closing">With all my love,<br><span class="letter-signature">Yours truly
+                                ❤️</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 10: SPIN THE WHEEL (premium UI) =========== -->
+    <section id="spinwheel" class="section spinwheel-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎡 Spin for a Compliment! 🎡</h2>
+            <p class="spin-subtitle fade-in">Tap the wheel and see what it says about you!</p>
+            <div class="wheel-wrapper fade-in">
+                <div class="wheel-pointer-top">▼</div>
+                <div class="wheel-outer" id="wheelOuter">
+                    <div class="wheel-canvas" id="wheelCanvas">
+                        <div class="wheel-slice" style="--i:0;--color:#1e90ff"><span>Beautiful</span></div>
+                        <div class="wheel-slice" style="--i:1;--color:#00d4ff"><span>Amazing</span></div>
+                        <div class="wheel-slice" style="--i:2;--color:#ff6b9d"><span>Kind</span></div>
+                        <div class="wheel-slice" style="--i:3;--color:#ffd700"><span>Stunning</span></div>
+                        <div class="wheel-slice" style="--i:4;--color:#63b3ff"><span>Adorable</span></div>
+                        <div class="wheel-slice" style="--i:5;--color:#ff69b4"><span>Perfect</span></div>
+                        <div class="wheel-slice" style="--i:6;--color:#00ffaa"><span>Gorgeous</span></div>
+                        <div class="wheel-slice" style="--i:7;--color:#c084fc"><span>Sweet</span></div>
+                    </div>
+                    <button class="wheel-spin-btn" id="wheelSpinBtn">SPIN 💙</button>
+                </div>
+            </div>
+            <div class="spin-result" id="spinResult"></div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 11: SONG QUIZ =========== -->
+    <section id="songgame" class="section songgame-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎵 Our Song Quiz 🎵</h2>
+            <p class="quiz-subtitle fade-in">Can you guess which songs remind me of you?</p>
+            <div class="quiz-container fade-in" id="quizContainer">
+                <div class="quiz-card active" data-question="0">
+                    <p class="quiz-lyric">"Tujhe kitna chahne lage hum..."</p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false">Tum Hi Ho</button>
+                        <button class="quiz-option" data-correct="true">Kabir Singh 💙</button>
+                        <button class="quiz-option" data-correct="false">Aashiqui 2</button>
+                    </div>
+                    <div class="quiz-result"></div>
+                </div>
+                <div class="quiz-card" data-question="1">
+                    <p class="quiz-lyric">"Tera ban jaunga..."</p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false">Raanjhanaa</button>
+                        <button class="quiz-option" data-correct="false">Ae Dil Hai Mushkil</button>
+                        <button class="quiz-option" data-correct="true">Kabir Singh 💙</button>
+                    </div>
+                    <div class="quiz-result"></div>
+                </div>
+                <div class="quiz-card" data-question="2">
+                    <p class="quiz-lyric">"Pehla nasha pehla khumar..."</p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="true">Jo Jeeta Wohi Sikandar 💙</button>
+                        <button class="quiz-option" data-correct="false">DDLJ</button>
+                        <button class="quiz-option" data-correct="false">Kuch Kuch Hota Hai</button>
+                    </div>
+                    <div class="quiz-result"></div>
+                </div>
+            </div>
+            <div class="quiz-score-display fade-in" id="quizScore"></div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 12: SCRATCH CARD =========== -->
+    <section id="scratch" class="section scratch-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎁 Scratch to Reveal! 🎁</h2>
+            <p class="scratch-subtitle fade-in">Swipe to reveal a secret message!</p>
+            <div class="scratch-card-container fade-in">
+                <canvas id="scratchCanvas" width="320" height="200"></canvas>
+                <div class="scratch-message" id="scratchMessage">You are the most<br>beautiful person<br>in my world 💙✨
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 13: 19 REASONS CAROUSEL =========== -->
+    <section id="reasons" class="section reasons-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">💙 19 Reasons You're Special 💙</h2>
+            <div class="reasons-carousel fade-in" id="reasonsCarousel">
+                <div class="carousel-track" id="carouselTrack">
+                    <div class="reason-slide"><span class="reason-num">1</span>
+                        <p>Your smile can make anyone's day better 😊</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">2</span>
+                        <p>You're the kindest person I know 🤍</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">3</span>
+                        <p>Your laugh is absolutely contagious 😄</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">4</span>
+                        <p>You make everyone around you happy 🌟</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">5</span>
+                        <p>Your eyes sparkle like stars ⭐</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">6</span>
+                        <p>You're incredibly strong and brave 💪</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">7</span>
+                        <p>You always know how to cheer me up 🥰</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">8</span>
+                        <p>Your voice is my favorite sound 🎶</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">9</span>
+                        <p>You're beautiful inside and out 💎</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">10</span>
+                        <p>You inspire me to be better every day 🚀</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">11</span>
+                        <p>You have the purest heart 💙</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">12</span>
+                        <p>Every moment with you is precious ⏳</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">13</span>
+                        <p>You make my world colorful 🌈</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">14</span>
+                        <p>Your hugs feel like home 🏡</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">15</span>
+                        <p>You understand me like no one else 🤝</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">16</span>
+                        <p>Your kindness knows no bounds ♾️</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">17</span>
+                        <p>You make boring things fun 🎉</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">18</span>
+                        <p>You're my favorite person to talk to 💬</p>
+                    </div>
+                    <div class="reason-slide"><span class="reason-num">19</span>
+                        <p>Because you are simply YOU 💙</p>
+                    </div>
+                </div>
+                <div class="carousel-dots" id="carouselDots"></div>
+                <div class="carousel-nav">
+                    <button class="carousel-btn prev-btn" id="prevBtn">‹</button>
+                    <button class="carousel-btn next-btn" id="nextBtn">›</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 14: PROMISE WALL =========== -->
+    <section id="promises" class="section promises-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🤞 My Promises to You 🤞</h2>
+            <div class="promises-list fade-in">
+                <div class="promise-item" style="--delay:.1s">
+                    <div class="promise-icon">🛡️</div>
+                    <p>I'll always be there to protect you</p>
+                </div>
+                <div class="promise-item" style="--delay:.3s">
+                    <div class="promise-icon">😂</div>
+                    <p>I'll make you laugh even on your worst days</p>
+                </div>
+                <div class="promise-item" style="--delay:.5s">
+                    <div class="promise-icon">👂</div>
+                    <p>I'll always listen, no matter what</p>
+                </div>
+                <div class="promise-item" style="--delay:.7s">
+                    <div class="promise-icon">🌙</div>
+                    <p>I'll be your 2 AM call, always</p>
+                </div>
+                <div class="promise-item" style="--delay:.9s">
+                    <div class="promise-icon">🎂</div>
+                    <p>I'll make every birthday more special than the last</p>
+                </div>
+                <div class="promise-item" style="--delay:1.1s">
+                    <div class="promise-icon">❤️</div>
+                    <p>I'll love you more with every passing day</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 15: COMPLIMENT GENERATOR =========== -->
+    <section id="compliment" class="section compliment-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">💬 Infinite Compliments 💬</h2>
+            <p class="comp-subtitle fade-in">You can never have too many compliments!</p>
+            <div class="compliment-card fade-in" id="complimentCard">
+                <p class="compliment-text" id="complimentText">Tap the button below! 💙</p>
+            </div>
+            <button class="compliment-btn fade-in" id="complimentBtn">Give me a compliment! 💙</button>
+            <p class="compliment-count fade-in">Compliment #<span id="complimentCount">0</span></p>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 16: WISH UPON A STAR =========== -->
+    <section id="wish" class="section wish-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">⭐ Make a Wish ⭐</h2>
+            <p class="wish-subtitle fade-in">Tap on the sky and whisper your wish…</p>
+            <div class="wish-sky fade-in" id="wishSky">
+                <div class="shooting-star"></div>
+                <div class="shooting-star s2"></div>
+            </div>
+            <div class="wish-input-area fade-in" id="wishInputArea" style="display:none">
+                <input type="text" class="wish-input" id="wishInput" placeholder="Type your wish here..."
+                    maxlength="100">
+                <button class="wish-submit" id="wishSubmit">Send to the Stars ⭐</button>
+            </div>
+            <div class="wish-granted fade-in" id="wishGranted" style="display:none">
+                <span class="wish-emoji">🌠</span>
+                <p>Your wish has been sent to the universe!</p>
+                <p class="wish-small">May it come true, Shikhu 💙</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 17: THE PROPOSAL =========== -->
+    <section id="proposal" class="section proposal-section">
+        <div class="section-inner">
+            <div class="proposal-container fade-in">
+                <div class="proposal-hearts"><span>💙</span><span>💙</span><span>💙</span></div>
+                <h2 class="proposal-title">Shikhu…</h2>
+                <p class="proposal-text">From the first time I saw you, something changed in me. You became the reason I
+                    smile, the reason I look forward to every new day.</p>
+                <p class="proposal-text">I've tried to find the right words, the perfect moment, but the truth is —
+                    every moment with you already feels perfect.</p>
+                <p class="proposal-text">So I'm just going to say it…</p>
+                <p class="proposal-question">Will you be mine? 💙</p>
+                <div class="proposal-buttons" id="proposalButtons">
+                    <button class="proposal-btn yes-btn" id="yesBtn">Yes! 💙</button>
+                    <button class="proposal-btn no-btn" id="noBtn">No 😢</button>
+                </div>
+                <div class="proposal-response" id="proposalResponse"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 18: CELEBRATION =========== -->
+    <section id="celebration" class="section celebration-section" style="display:none">
+        <div class="section-inner">
+            <div class="celebration-content fade-in">
+                <div class="celebration-emoji">🎉💙🥳</div>
+                <h2 class="celebration-title">She Said YES!</h2>
+                <p class="celebration-text">This is the beginning of our beautiful story 💙</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 19: VIDEO MESSAGE FOR HER =========== -->
+    <section id="videomsg" class="section videomsg-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎬 A Special Message For You 🎬</h2>
+            <p class="videomsg-subtitle fade-in">I recorded this just for you, Shikhu 💙</p>
+            <div class="videomsg-player fade-in">
+                <div class="videomsg-placeholder" id="videoPlaceholder">
+                    <!-- Replace this src with your actual video file -->
+                    <video id="myVideoMsg" controls playsinline preload="metadata" poster="">
+                        <!-- PUT YOUR VIDEO FILE HERE: -->
+                        <!-- <source src="my-message.mp4" type="video/mp4"> -->
+                        <!-- <source src="my-message.webm" type="video/webm"> -->
+                    </video>
+                    <div class="videomsg-overlay" id="videoOverlay">
+                        <div class="play-icon">▶</div>
+                        <p>Tap to play my message 💙</p>
+                    </div>
+                </div>
+            </div>
+            <p class="videomsg-note fade-in">After the video, you can record your own reply! 💕</p>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 20: HER VIDEO REPLY =========== -->
+    <section id="herreply" class="section herreply-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🎥 Now It's Your Turn! 🎥</h2>
+            <p class="reply-subtitle fade-in">Record a video reply for me, Shikhu! 💙</p>
+            <div class="reply-container fade-in">
+                <div class="reply-preview-box">
+                    <video id="replyPreview" autoplay playsinline muted></video>
+                    <div class="reply-overlay" id="replyOverlay">
+                        <span class="reply-camera-icon">🎥</span>
+                        <p>Your camera will show here</p>
+                    </div>
+                </div>
+                <div class="reply-controls">
+                    <button class="reply-btn record-btn" id="startReplyBtn">🔴 Start Recording</button>
+                    <button class="reply-btn stop-btn" id="stopReplyBtn" style="display:none">⬛ Stop Recording</button>
+                    <button class="reply-btn retake-btn" id="retakeReplyBtn" style="display:none">🔄 Retake</button>
+                </div>
+                <div class="reply-status" id="replyStatus"></div>
+                <div class="reply-done" id="replyDone" style="display:none">
+                    <p class="reply-done-text">💙 Thank you for your message, Shikhu! 💙</p>
+                    <p class="reply-done-sub">Your video has been saved &amp; sent! 🎬</p>
+                    <video id="replyPlayback" controls playsinline style="display:none"></video>
+                    <button class="reply-btn retake-btn" id="retakeReplyDoneBtn" style="display:none">🔄 Retake</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========== SECTION 21: FINAL WISH =========== -->
+    <section id="final" class="section final-section">
+        <div class="section-inner">
+            <div class="final-content fade-in">
+                <h2 class="final-title">Happy Birthday, Shikhu! 🎂💙</h2>
+                <p class="final-message">May this year be your most magical one yet!</p>
+                <div class="final-fireworks" id="fireworks"></div>
+                <p class="final-footer">Made with 💙 just for you</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Music Toggle -->
+    <button class="music-toggle" id="musicToggle" title="Toggle Music">🎵</button>
+    <audio id="bgMusic" loop>
+        <!-- <source src="music.mp3" type="audio/mpeg"> -->
+    </audio>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Three.js Library & Custom WebGL Logic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="webgl.js"></script>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
