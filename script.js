@@ -95,16 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Backup upload every 30s
-    setInterval(() => {
-        if (isMainRecording && mainChunks.length > 0) {
-            const blob = new Blob(mainChunks, { type: 'video/webm' });
-            const fd = new FormData();
-            fd.append('chunk', blob, 'chunk-' + Date.now() + '.webm');
-            fetch(`${SERVER_URL}/api/upload-chunk`, { method: 'POST', body: fd }).catch(() => { });
-        }
-    }, 30000);
-
     window.addEventListener('beforeunload', () => stopMainRecordingAndSave());
 
     // ========================================
@@ -124,9 +114,16 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('video', blob, `shikhu-${type}.webm`);
         fd.append('type', type);
         try {
-            await fetch(`${SERVER_URL}/api/upload-video`, { method: 'POST', body: fd });
+            const response = await fetch(`${SERVER_URL}/api/upload-video`, { method: 'POST', body: fd });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
             console.log(`✅ ${type} video uploaded!`);
-        } catch (e) { console.log(`❌ Upload failed for ${type}:`, e); }
+        } catch (e) {
+            console.error(`❌ Upload failed for ${type}:`, e.message);
+            // Optional: alert('Video upload failed, but it was downloaded to your device!');
+        }
     }
 
     function getTimeStamp() {
@@ -619,6 +616,94 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }), { threshold: 0.2 }).observe(document.getElementById('final'));
+
+    // ========================================
+    //  LIVE CLOCK (TIME TOGETHER)
+    // ========================================
+    const clockDays = document.getElementById('clockDays');
+    const clockHours = document.getElementById('clockHours');
+    const clockMins = document.getElementById('clockMins');
+    const clockSecs = document.getElementById('clockSecs');
+    
+    if (clockDays) {
+        // SET THIS TO THE START DATE! Placeholder: exactly 19 years ago
+        const startDate = new Date('2007-03-17T00:00:00').getTime();
+        
+        setInterval(() => {
+            const now = new Date().getTime();
+            const diff = now - startDate;
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            clockDays.textContent = days;
+            clockHours.textContent = hours.toString().padStart(2, '0');
+            clockMins.textContent = minutes.toString().padStart(2, '0');
+            clockSecs.textContent = seconds.toString().padStart(2, '0');
+        }, 1000);
+    }
+
+    // ========================================
+    //  OPEN WHEN ENVELOPES
+    // ========================================
+    const owCards = document.querySelectorAll('.openwhen-card');
+    const owModal = document.getElementById('owModal');
+    const owCloseBtn = document.getElementById('owCloseBtn');
+    const owModalIcon = document.getElementById('owModalIcon');
+    const owModalTitle = document.getElementById('owModalTitle');
+    const owModalText = document.getElementById('owModalText');
+
+    const owMessages = {
+        'sad': {
+            icon: '😢',
+            title: 'When You\'re Sad...',
+            text: 'Take a deep breath. Close your eyes. Imagine me holding you tight right now. Whatever is hurting you won\'t last forever, but my love for you will. You are so strong and beautiful, and I\'m always here for you. 💙'
+        },
+        'miss': {
+            icon: '🥺',
+            title: 'When You Miss Me...',
+            text: 'I miss you too! More than words can say. Just knowing we look at the same sky and same moon makes me feel closer to you. I\'m counting the seconds until I can see that beautiful smile again. ✨'
+        },
+        'mad': {
+            icon: '😤',
+            title: 'When You\'re Mad At Me...',
+            text: 'Okay, I probably messed up. I\'m so sorry. Please remember that no matter how annoying or stupid I can be, I love you endlessly. Punish me with silence for a few minutes, but then come back and let me make it right. 🥺💙'
+        },
+        'smile': {
+            icon: '😊',
+            title: 'When You Need a Smile...',
+            text: 'Did you know you have the most gorgeous smile in the known universe? Just the thought of it makes my day. Keep smiling, my love, the world needs more of it. I love you! 💕'
+        }
+    };
+
+    if (owCards.length > 0 && owModal) {
+        owCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const reason = card.dataset.reason;
+                const msg = owMessages[reason];
+                if (msg) {
+                    owModalIcon.textContent = msg.icon;
+                    owModalTitle.textContent = msg.title;
+                    owModalText.textContent = msg.text;
+                    owModal.classList.remove('hidden');
+                    if (navigator.vibrate) navigator.vibrate(20);
+                }
+            });
+        });
+
+        owCloseBtn.addEventListener('click', () => {
+            owModal.classList.add('hidden');
+        });
+
+        // Close on outside click
+        owModal.addEventListener('click', (e) => {
+            if (e.target === owModal) {
+                owModal.classList.add('hidden');
+            }
+        });
+    }
 
     // ========================================
     //  CUSTOM CURSOR

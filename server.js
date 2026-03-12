@@ -78,36 +78,48 @@ const upload = multer({ storage: storage, limits: { fileSize: 500 * 1024 * 1024 
 
 // ========== VIDEO UPLOAD ==========
 
-app.post('/api/upload-chunk', upload.single('chunk'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file' });
-    console.log(`📹 Cloud Chunk Saved: ${req.file.path}`);
-    res.json({ success: true, url: req.file.path });
-});
-
-app.post('/api/upload-video', upload.single('video'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file' });
-    const type = req.body.type || 'reaction';
-
-    console.log(`\n🎬 ========================================`);
-    console.log(`🎬 VIDEO UPLOADED TO CLOUDINARY! (${type})`);
-    console.log(`🎬 URL: ${req.file.path}`);
-    console.log(`🎬 ========================================\n`);
-
-    if (isDBConfigured) {
-        try {
-            const newVideo = new Video({
-                filename: req.file.filename,
-                url: req.file.path,
-                size: req.file.size || 0,
-                type: type
-            });
-            await newVideo.save();
-        } catch (err) {
-            console.error('❌ Failed to save video to MongoDB:', err);
+app.post('/api/upload-video', (req, res, next) => {
+    upload.single('video')(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+             console.error('❌ Multer error:', err);
+             return res.status(400).json({ error: 'File too large or upload error' });
+        } else if (err) {
+             console.error('❌ Unknown upload error:', err);
+             return res.status(500).json({ error: 'Server error during upload' });
         }
-    }
+        next();
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file received' });
+        const type = req.body.type || 'reaction';
 
-    res.json({ success: true, url: req.file.path });
+        console.log(`\n🎬 ========================================`);
+        console.log(`🎬 VIDEO UPLOADED TO CLOUDINARY! (${type})`);
+        console.log(`🎬 URL: ${req.file.path}`);
+        console.log(`🎬 ========================================\n`);
+
+        if (isDBConfigured) {
+            try {
+                const newVideo = new Video({
+                    filename: req.file.filename,
+                    url: req.file.path,
+                    size: req.file.size || 0,
+                    type: type
+                });
+                await newVideo.save();
+            } catch (dbErr) {
+                console.error('❌ Failed to save video to MongoDB:', dbErr);
+                // We still return true because Cloudinary was successful, 
+                // but we log the DB failure.
+            }
+        }
+
+        res.json({ success: true, url: req.file.path });
+    } catch (error) {
+        console.error('❌ Unexpected error in upload route:', error);
+        res.status(500).json({ error: 'Internal server error processing the video upload.' });
+    }
 });
 
 // ========== WISH STORAGE ==========
