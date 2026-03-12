@@ -398,20 +398,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('wishSubmit').addEventListener('click', async () => {
         const wish = wishInput.value.trim();
         if (!wish) return;
+
+        // FIX: Disable button during submission to prevent double-submit
+        const wishBtn = document.getElementById('wishSubmit');
+        wishBtn.disabled = true;
+        wishBtn.textContent = '✨ Sending...';
+
         document.getElementById('wishInputArea').style.display = 'none';
         document.getElementById('wishGranted').style.display = 'block';
         if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
         launchConfetti();
+        wishInput.value = ''; // FIX: Clear input after submit
 
         // Send wish to server/database
         try {
-            await fetch(`${SERVER_URL}/api/wish`, {
+            const res = await fetch(`${SERVER_URL}/api/wish`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ wish })
             });
+            if (!res.ok) throw new Error('Server response not OK');
             console.log('⭐ Wish saved to database!');
-        } catch (e) { console.log('Wish save failed:', e); }
+        } catch (e) {
+            console.warn('Wish save failed (non-critical):', e.message);
+            // Non-critical: the UI already shows success — the wish was a great experience regardless
+        } finally {
+            wishBtn.disabled = false;
+            wishBtn.textContent = '⭐ Send My Wish';
+        }
     });
 
     // ========================================
@@ -547,16 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
     retakeReplyBtn.addEventListener('click', handleRetake);
     retakeReplyDoneBtn.addEventListener('click', handleRetake);
 
-    // ========================================
-    //  MUSIC
-    // ========================================
-    let isPlay = false;
-    document.getElementById('musicToggle').addEventListener('click', function () {
-        const m = document.getElementById('bgMusic');
-        if (isPlay) { m.pause(); this.classList.remove('playing'); this.textContent = '🎵'; }
-        else { m.play().catch(() => { }); this.classList.add('playing'); this.textContent = '🔊'; }
-        isPlay = !isPlay;
-    });
+    // FIX: Removed dead `#musicToggle` event listener — the old button
+    // was replaced by the new `.music-player` div. Logic now handled by the
+    // FLOATING MUSIC PLAYER section below.
 
     // ========================================
     //  PARALLAX + FIREWORKS

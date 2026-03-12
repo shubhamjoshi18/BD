@@ -19,36 +19,41 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ========== MIDDLEWARE ==========
-app.use(helmet({
-    contentSecurityPolicy: false,
-}));
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
-app.use(morgan('combined'));
+app.use(morgan('dev')); // FIX: use 'dev' format — cleaner logs
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // FIX: add body size limit
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
 // ========== DATABASE CONFIG (MongoDB) ==========
+// FIX: Removed deprecated options useNewUrlParser & unifiedTopology (not needed in Mongoose 6+)
 const isDBConfigured = !!process.env.MONGODB_URI;
 if (isDBConfigured) {
-    mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, unifiedTopology: true })
+    mongoose.connect(process.env.MONGODB_URI)
         .then(() => console.log('🗄️  MongoDB Connected!'))
-        .catch(err => console.error('❌ MongoDB Connection Error:', err));
+        .catch(err => console.error('❌ MongoDB Connection Error:', err.message));
+
+    mongoose.connection.on('disconnected', () => console.warn('⚠️  MongoDB disconnected.'));
+    mongoose.connection.on('error', (err) => console.error('❌ MongoDB runtime error:', err.message));
 } else {
     console.warn('⚠️  WARNING: MONGODB_URI not set in .env. Database features will fail.');
 }
 
+// FIX: Added schema validation — required, trim, and maxlength constraints
 const videoSchema = new mongoose.Schema({
-    filename: String,
-    url: String,
-    size: Number,
-    type: String, // 'reaction' or 'reply'
+    filename: { type: String, default: 'cloudinary-video' },
+    url: { type: String, required: true },
+    size: { type: Number, default: 0 },
+    type: { type: String, enum: ['reaction', 'reply', 'other'], default: 'reaction' },
     date: { type: Date, default: Date.now }
 });
 const Video = mongoose.model('Video', videoSchema);
 
+// FIX: wish is now required and trimmed — prevents empty wish saves
 const wishSchema = new mongoose.Schema({
-    wish: String,
+    wish: { type: String, required: true, trim: true, maxlength: 500 },
     date: { type: Date, default: Date.now }
 });
 const Wish = mongoose.model('Wish', wishSchema);
@@ -109,15 +114,13 @@ app.post('/api/upload-video', (req, res, next) => {
                 });
                 await newVideo.save();
             } catch (dbErr) {
-                console.error('❌ Failed to save video to MongoDB:', dbErr);
-                // We still return true because Cloudinary was successful, 
-                // but we log the DB failure.
+                console.error('❌ Failed to save video to MongoDB:', dbErr.message);
             }
         }
 
         res.json({ success: true, url: req.file.path });
     } catch (error) {
-        console.error('❌ Unexpected error in upload route:', error);
+        console.error('❌ Unexpected error in upload route:', error.message);
         res.status(500).json({ error: 'Internal server error processing the video upload.' });
     }
 });
@@ -126,20 +129,21 @@ app.post('/api/upload-video', (req, res, next) => {
 
 app.post('/api/wish', async (req, res) => {
     const { wish } = req.body;
-    if (!wish) return res.status(400).json({ error: 'No wish provided' });
+    // FIX: also check for empty string after trimming
+    if (!wish || !wish.trim()) return res.status(400).json({ error: 'No wish provided' });
 
     console.log(`\n⭐ ========================================`);
     console.log(`⭐ WISH RECEIVED FROM SHIKHU!`);
-    console.log(`⭐ "${wish}"`);
+    console.log(`⭐ "${wish.trim()}"`);
     console.log(`⭐ ========================================\n`);
 
     if (isDBConfigured) {
         try {
-            const newWish = new Wish({ wish });
+            const newWish = new Wish({ wish: wish.trim() });
             await newWish.save();
             return res.json({ success: true, message: 'Wish saved to MongoDB!' });
         } catch (err) {
-            console.error('❌ Failed to save wish to MongoDB:', err);
+            console.error('❌ Failed to save wish to MongoDB:', err.message);
             return res.status(500).json({ error: 'Database Error' });
         }
     } else {
@@ -150,13 +154,14 @@ app.post('/api/wish', async (req, res) => {
 app.get('/api/wishes', async (req, res) => {
     if (!isDBConfigured) return res.json({ wishes: [], count: 0, error: 'DB not configured' });
     try {
-        const wishes = await Wish.find().sort({ date: -1 });
+        const wishes = await Wish.find().sort({ date: -1 }).lean();
         const mappedWishes = wishes.map(w => ({
             wish: w.wish,
-            date: w.date.toLocaleString()
+            date: w.date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) // FIX: specific timezone
         }));
         res.json({ wishes: mappedWishes, count: mappedWishes.length });
     } catch (err) {
+        console.error('❌ Error fetching wishes:', err.message);
         res.status(500).json({ error: 'Database Error' });
     }
 });
@@ -166,15 +171,18 @@ app.get('/api/wishes', async (req, res) => {
 app.get('/api/recordings', async (req, res) => {
     if (!isDBConfigured) return res.json({ recordings: [], count: 0, error: 'DB not configured' });
     try {
-        const videos = await Video.find().sort({ date: -1 });
+        const videos = await Video.find().sort({ date: -1 }).lean();
         const mappedVideos = videos.map(v => ({
             name: v.filename || 'Cloudinary Video',
             url: v.url,
-            sizeMB: (v.size / 1024 / 1024).toFixed(2) + ' MB',
-            date: v.date
+            // FIX: prevent divide-by-zero for 0-byte files
+            sizeMB: v.size > 0 ? (v.size / 1024 / 1024).toFixed(2) + ' MB' : 'N/A',
+            // FIX: serialize date as ISO string for consistent parsing in dashboard
+            date: v.date ? v.date.toISOString() : new Date().toISOString()
         }));
         res.json({ recordings: mappedVideos, count: mappedVideos.length });
     } catch (err) {
+        console.error('❌ Error fetching recordings:', err.message);
         res.status(500).json({ error: 'Database Error' });
     }
 });
@@ -234,21 +242,31 @@ app.get('/dashboard', (req, res) => {
         }));
         async function loadAll(){await loadVideos();await loadWishes()}
         async function loadVideos(){
-            const r=await fetch('/api/recordings');const d=await r.json();const g=document.getElementById('grid');
-            if(d.error) { document.getElementById('error-container').innerHTML = '<div class="error-msg">⚠️ Database is not configured. Add MONGODB_URI to .env</div>'; return; }
-            if(d.count===0){g.innerHTML='<p class="empty">No recordings yet... 💙</p>';return}
-            g.innerHTML=d.recordings.map(r=>'<div class="card"><video src="'+r.url+'" controls playsinline preload="metadata"></video><h3>'+r.name+'</h3><p>Cloud URL | '+new Date(r.date).toLocaleString()+'</p><a href="'+r.url+'" target="_blank" download>🔗 Open File</a></div>').join('');
+            try {
+                const r=await fetch('/api/recordings');const d=await r.json();const g=document.getElementById('grid');
+                if(d.error){document.getElementById('error-container').innerHTML='<div class="error-msg">⚠️ '+d.error+'</div>';return;}
+                if(d.count===0){g.innerHTML='<p class="empty">No recordings yet... 💙</p>';return}
+                // FIX: use new Date(r.date).toLocaleString() since date is now a proper ISO string
+                g.innerHTML=d.recordings.map(r=>'<div class="card"><video src="'+r.url+'" controls playsinline preload="metadata"></video><h3>'+r.name+'</h3><p>'+r.sizeMB+' | '+new Date(r.date).toLocaleString('en-IN')+'</p><a href="'+r.url+'" target="_blank">🔗 Open File</a></div>').join('');
+            } catch(e) { document.getElementById('error-container').innerHTML='<div class="error-msg">⚠️ Could not connect to server.</div>'; }
         }
         async function loadWishes(){
-            const r=await fetch('/api/wishes');const d=await r.json();const w=document.getElementById('wishList');
-            if(d.error) return; 
-            if(d.count===0){w.innerHTML='<p class="empty">No wishes yet... ⭐</p>';return}
-            w.innerHTML=d.wishes.map(w=>'<div class="wish-card"><p class="wish-text">"'+w.wish+'"</p><p class="wish-date">'+w.date+'</p></div>').join('');
+            try {
+                const r=await fetch('/api/wishes');const d=await r.json();const w=document.getElementById('wishList');
+                if(d.error)return;
+                if(d.count===0){w.innerHTML='<p class="empty">No wishes yet... ⭐</p>';return}
+                w.innerHTML=d.wishes.map(w=>'<div class="wish-card"><p class="wish-text">"'+w.wish+'"</p><p class="wish-date">'+w.date+'</p></div>').join('');
+            } catch(e) { console.error('Failed to load wishes', e); }
         }
         loadAll();
     </script>
 </body>
 </html>`);
+});
+
+// FIX: Use regex for 404 — Express 4 wildcard `/api/*` requires `/api/*path`
+app.use(/^\/api\/.*/, (req, res) => {
+    res.status(404).json({ error: 'API route not found' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
@@ -261,3 +279,16 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🗄️  Database:   MongoDB`);
     console.log(`💙 ========================================\n`);
 });
+
+// FIX: Global safety net for unhandled promise rejections
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ Unhandled Promise Rejection:', reason);
+});
+
+// FIX: Graceful shutdown
+process.on('SIGTERM', async () => {
+    console.log('🛑 Shutting down server gracefully...');
+    await mongoose.connection.close();
+    process.exit(0);
+});
+
