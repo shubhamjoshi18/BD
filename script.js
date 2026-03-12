@@ -618,31 +618,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }), { threshold: 0.2 }).observe(document.getElementById('final'));
 
     // ========================================
-    //  LIVE CLOCK (TIME TOGETHER)
+    //  LIVE CLOCKS (TIME TOGETHER)
     // ========================================
-    const clockDays = document.getElementById('clockDays');
-    const clockHours = document.getElementById('clockHours');
-    const clockMins = document.getElementById('clockMins');
-    const clockSecs = document.getElementById('clockSecs');
-    
-    if (clockDays) {
-        // SET THIS TO THE START DATE! Placeholder: exactly 19 years ago
-        const startDate = new Date('2007-03-17T00:00:00').getTime();
+    function updateClock(diff, daysEl, hoursEl, minsEl, secsEl) {
+        if (diff < 0) return;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        daysEl.textContent = days;
+        hoursEl.textContent = hours.toString().padStart(2, '0');
+        minsEl.textContent = minutes.toString().padStart(2, '0');
+        secsEl.textContent = seconds.toString().padStart(2, '0');
+    }
+
+    const metDays = document.getElementById('metDays');
+    if (metDays) {
+        const metHours = document.getElementById('metHours');
+        const metMins = document.getElementById('metMins');
+        const metSecs = document.getElementById('metSecs');
+        
+        const talkDays = document.getElementById('talkDays');
+        const talkHours = document.getElementById('talkHours');
+        const talkMins = document.getElementById('talkMins');
+        const talkSecs = document.getElementById('talkSecs');
+
+        // Dates provided by user
+        const dateMet = new Date('2018-03-17T00:00:00').getTime();
+        const dateTalk = new Date('2026-02-05T00:00:00').getTime();
         
         setInterval(() => {
             const now = new Date().getTime();
-            const diff = now - startDate;
-            
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            clockDays.textContent = days;
-            clockHours.textContent = hours.toString().padStart(2, '0');
-            clockMins.textContent = minutes.toString().padStart(2, '0');
-            clockSecs.textContent = seconds.toString().padStart(2, '0');
+            if (metDays) updateClock(now - dateMet, metDays, metHours, metMins, metSecs);
+            if (talkDays) updateClock(now - dateTalk, talkDays, talkHours, talkMins, talkSecs);
         }, 1000);
+        
+        // Initial call
+        const now = new Date().getTime();
+        if (metDays) updateClock(now - dateMet, metDays, metHours, metMins, metSecs);
+        if (talkDays) updateClock(now - dateTalk, talkDays, talkHours, talkMins, talkSecs);
     }
 
     // ========================================
