@@ -638,26 +638,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const metHours = document.getElementById('metHours');
         const metMins = document.getElementById('metMins');
         const metSecs = document.getElementById('metSecs');
-        
-        const talkDays = document.getElementById('talkDays');
-        const talkHours = document.getElementById('talkHours');
-        const talkMins = document.getElementById('talkMins');
-        const talkSecs = document.getElementById('talkSecs');
 
         // Dates provided by user
         const dateMet = new Date('2018-03-17T00:00:00').getTime();
-        const dateTalk = new Date('2026-02-05T00:00:00').getTime();
         
         setInterval(() => {
             const now = new Date().getTime();
             if (metDays) updateClock(now - dateMet, metDays, metHours, metMins, metSecs);
-            if (talkDays) updateClock(now - dateTalk, talkDays, talkHours, talkMins, talkSecs);
         }, 1000);
         
         // Initial call
         const now = new Date().getTime();
         if (metDays) updateClock(now - dateMet, metDays, metHours, metMins, metSecs);
-        if (talkDays) updateClock(now - dateTalk, talkDays, talkHours, talkMins, talkSecs);
     }
 
     // ========================================
@@ -717,6 +709,68 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === owModal) {
                 owModal.classList.add('hidden');
             }
+        });
+    }
+
+    // ========================================
+    //  LOVE JAR LOGIC
+    // ========================================
+    const jarContainer = document.getElementById('jarContainer');
+    const jarModal = document.getElementById('jarModal');
+    const jarCloseBtn = document.getElementById('jarCloseBtn');
+    const jarReasonNum = document.getElementById('jarReasonNum');
+    const jarModalText = document.getElementById('jarModalText');
+
+    // Add as many reasons as you want here!
+    const loveReasons = [
+        "Because of your beautiful smile that lights up my whole world.",
+        "Because you make me want to be a better person every single day.",
+        "For everything you are, everything you have been, and everything you will be.",
+        "Because somehow, after all this time, you still give me butterflies.",
+        "Because my favorite place in the entire universe is right next to you.",
+        "Because of how deeply you care for the people you love.",
+        "Because you understand my jokes even when they aren't funny.",
+        "Because we can talk for hours about absolutely nothing and it's still amazing.",
+        "Because you are my best friend and my soulmate all wrapped into one.",
+        "Because looking at you feels like coming home."
+    ];
+
+    if (jarContainer && jarModal) {
+        jarContainer.addEventListener('click', () => {
+            const randomReason = loveReasons[Math.floor(Math.random() * loveReasons.length)];
+            jarReasonNum.textContent = Math.floor(Math.random() * 100) + 1; // Cute random or sequential
+            jarModalText.textContent = `"${randomReason}"`;
+            jarModal.classList.remove('hidden');
+            if (navigator.vibrate) navigator.vibrate(20);
+        });
+
+        jarCloseBtn.addEventListener('click', () => jarModal.classList.add('hidden'));
+        jarModal.addEventListener('click', (e) => {
+            if (e.target === jarModal) jarModal.classList.add('hidden');
+        });
+    }
+
+    // ========================================
+    //  FLOATING MUSIC PLAYER
+    // ========================================
+    const musicPlayer = document.getElementById('musicPlayer');
+    const musicToggleBtn = document.getElementById('musicToggleBtn');
+    const bgMusic = document.getElementById('bgMusic');
+    const songStatus = document.getElementById('songStatus');
+    let isPlaying = false;
+
+    if (musicPlayer && bgMusic) {
+        musicPlayer.addEventListener('click', () => {
+            if (isPlaying) {
+                bgMusic.pause();
+                musicToggleBtn.classList.remove('playing');
+                songStatus.textContent = 'Paused';
+            } else {
+                bgMusic.play().catch(e => console.log('Audio play failed:', e));
+                musicToggleBtn.classList.add('playing');
+                songStatus.textContent = 'Playing...';
+            }
+            isPlaying = !isPlaying;
         });
     }
 

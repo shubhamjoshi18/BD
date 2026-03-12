@@ -153,18 +153,43 @@
                     <div class="clock-unit"><span id="metMins">0</span><div class="unit-label">Minutes</div></div>
                     <div class="clock-unit special"><span id="metSecs">0</span><div class="unit-label">Seconds</div></div>
                 </div>
-                
-                <h3 class="live-clock-title" style="margin-top: 2rem;">Since we started talking properly...</h3>
-                <div class="live-clock">
-                    <div class="clock-unit"><span id="talkDays">0</span><div class="unit-label">Days</div></div>
-                    <div class="clock-unit"><span id="talkHours">0</span><div class="unit-label">Hours</div></div>
-                    <div class="clock-unit"><span id="talkMins">0</span><div class="unit-label">Minutes</div></div>
-                    <div class="clock-unit special"><span id="talkSecs">0</span><div class="unit-label">Seconds</div></div>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- =========== SECTION 4.5: STORY OF US TIMELINE =========== -->
+    <section id="ourstory" class="section timeline-v-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">📖 The Story of Us 📖</h2>
+            <div class="v-timeline">
+                <div class="v-timeline-item fade-in">
+                    <div class="v-timeline-dot"></div>
+                    <div class="v-timeline-content left">
+                        <h3>The Day We Met</h3>
+                        <p class="v-date">March 17, 2018</p>
+                        <p>The moment everything changed... (Add your story here)</p>
+                    </div>
+                </div>
+                <div class="v-timeline-item fade-in">
+                    <div class="v-timeline-dot"></div>
+                    <div class="v-timeline-content right">
+                        <h3>When We Started Talking</h3>
+                        <p class="v-date">February 5, 2026</p>
+                        <p>When late-night conversations became my favorite part of the day.</p>
+                    </div>
+                </div>
+                <div class="v-timeline-item fade-in">
+                    <div class="v-timeline-dot"></div>
+                    <div class="v-timeline-content left">
+                        <h3>Our First Date</h3>
+                        <p class="v-date">Your Date Here</p>
+                        <p>Add a beautiful memory here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
     <!-- =========== SECTION 5: BALLOON POP =========== -->
     <section id="balloon" class="section balloon-section">
         <div class="section-inner">
@@ -283,9 +308,41 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
     </section>
 
+    <!-- =========== SECTION 9.2: LOVE JAR =========== -->
+    <section id="lovejar" class="section lovejar-section">
+        <div class="section-inner">
+            <h2 class="section-title fade-in">🏺 Reasons I Love You 🏺</h2>
+            <p class="game-subtitle fade-in">Tap the jar to pull out a note!</p>
+            <div class="jar-container fade-in" id="jarContainer">
+                <div class="glass-jar">
+                    <div class="jar-lid"></div>
+                    <div class="jar-body">
+                        <!-- Tiny paper visuals inside -->
+                        <div class="paper-scrap p1"></div>
+                        <div class="paper-scrap p2"></div>
+                        <div class="paper-scrap p3"></div>
+                        <div class="paper-scrap p4"></div>
+                        <div class="paper-scrap p5"></div>
+                        <span class="jar-label">For Shikhu 💙</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal for Love Jar Note -->
+    <div id="jarModal" class="ow-modal hidden">
+        <div class="ow-modal-content jar-note">
+            <button class="ow-close-btn" id="jarCloseBtn">×</button>
+            <div class="ow-modal-icon">📜</div>
+            <h3 style="color:var(--accent); margin-bottom: 0.5rem; font-family:'Poppins',sans-serif;">Reason #<span id="jarReasonNum">1</span></h3>
+            <p id="jarModalText" style="color:var(--text-secondary); font-size: 1.1rem; font-style: italic;">...</p>
+        </div>
+    </div>
     <!-- =========== SECTION 9.5: OPEN WHEN ENVELOPES =========== -->
     <section id="openwhen" class="section openwhen-section">
         <div class="section-inner">
@@ -635,10 +692,18 @@
         </div>
     </section>
 
-    <!-- Music Toggle -->
-    <button class="music-toggle" id="musicToggle" title="Toggle Music">🎵</button>
+    <!-- Floating Music Player -->
+    <div class="music-player" id="musicPlayer">
+        <div class="record-container" id="musicToggleBtn">
+            <div class="vinyl-record" id="vinylRecord">🎵</div>
+        </div>
+        <div class="player-controls">
+            <p class="song-title">Our Song 💙</p>
+            <p class="song-status" id="songStatus">Tap to play</p>
+        </div>
+    </div>
     <audio id="bgMusic" loop>
-        <!-- <source src="music.mp3" type="audio/mpeg"> -->
+        <source src="music.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Custom Cursor -->
