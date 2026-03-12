@@ -2772,31 +2772,42 @@ select {
 
 .cursor-dot {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    width: 8px;
-    height: 8px;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
     background-color: var(--primary);
     border-radius: 50%;
     pointer-events: none;
     z-index: 99999;
     transform: translate(-50%, -50%);
     transition: width 0.2s, height 0.2s, background-color 0.2s;
+    opacity: 0;
+    will-change: top, left;
+    box-shadow: 0 0 8px var(--primary);
 }
 
 .cursor-outline {
     position: fixed;
-    top: 50%;
-    left: 50%;
+    top: 0;
+    left: 0;
     width: 40px;
     height: 40px;
-    border: 1px solid var(--primary-light);
-    background-color: rgba(30, 144, 255, 0.1);
+    border: 2px solid var(--primary-light);
+    background-color: rgba(30, 144, 255, 0.08);
     border-radius: 50%;
     pointer-events: none;
     z-index: 99998;
     transform: translate(-50%, -50%);
-    transition: width 0.2s, height 0.2s, background-color 0.2s, border-color 0.2s, opacity 0.2s;
+    transition: top 0.08s ease-out, left 0.08s ease-out, width 0.2s, height 0.2s, background-color 0.2s, border-color 0.2s, opacity 0.2s;
+    opacity: 0;
+    will-change: top, left;
+}
+
+/* Revealed once mouse enters page */
+.cursor-dot.cursor-visible,
+.cursor-outline.cursor-visible {
+    opacity: 1;
 }
 
 /* Hover effect classes */
@@ -2804,14 +2815,15 @@ select {
     width: 6px;
     height: 6px;
     background-color: var(--pink);
+    box-shadow: 0 0 12px var(--pink);
 }
 
 .cursor-outline.cursor-hover {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-color: var(--pink);
-    background-color: var(--pink-glow);
-    opacity: 0.8;
+    background-color: rgba(255, 107, 157, 0.12);
+    opacity: 0.9;
 }
 
 /* ===========================

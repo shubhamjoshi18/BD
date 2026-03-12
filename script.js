@@ -788,18 +788,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const cursorOutline = document.querySelector('.cursor-outline');
 
     if (cursorDot && cursorOutline) {
+        let mouseX = 0, mouseY = 0;
+        let outlineX = 0, outlineY = 0;
+
         window.addEventListener('mousemove', (e) => {
-            const posX = e.clientX;
-            const posY = e.clientY;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
 
-            cursorDot.style.left = `${posX}px`;
-            cursorDot.style.top = `${posY}px`;
+            // Reveal on first move
+            cursorDot.classList.add('cursor-visible');
+            cursorOutline.classList.add('cursor-visible');
 
-            cursorOutline.style.left = `${posX}px`;
-            cursorOutline.style.top = `${posY}px`;
+            // Dot follows instantly
+            cursorDot.style.left = `${mouseX}px`;
+            cursorDot.style.top = `${mouseY}px`;
+        }, { passive: true });
+
+        // Outline trails smoothly behind the dot
+        function animateOutline() {
+            outlineX += (mouseX - outlineX) * 0.18;
+            outlineY += (mouseY - outlineY) * 0.18;
+            cursorOutline.style.left = `${outlineX}px`;
+            cursorOutline.style.top = `${outlineY}px`;
+            requestAnimationFrame(animateOutline);
+        }
+        animateOutline();
+
+        // Hide cursor when leaving the window
+        document.addEventListener('mouseleave', () => {
+            cursorDot.classList.remove('cursor-visible');
+            cursorOutline.classList.remove('cursor-visible');
+        });
+        document.addEventListener('mouseenter', () => {
+            cursorDot.classList.add('cursor-visible');
+            cursorOutline.classList.add('cursor-visible');
         });
 
-        // Add hover effect to interactive elements
+        // Hover effect on interactive elements
         const interactiveSelectors = 'a, button, input, textarea, select, .balloon-item, .quiz-option, .game-heart, .scratch-card-container, #envelope, #wheelSpinBtn, .openwhen-card, .jar-container, .music-player';
 
         document.addEventListener('mouseover', (e) => {
