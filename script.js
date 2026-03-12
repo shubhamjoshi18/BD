@@ -793,15 +793,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Add hover effect to interactive elements
-        const interactiveSelectors = 'a, button, input, textarea, select, .balloon-item, .quiz-option, .game-heart, .scratch-card-container, #envelope, #wheelSpinBtn';
+        const interactiveSelectors = 'a, button, input, textarea, select, .balloon-item, .quiz-option, .game-heart, .scratch-card-container, #envelope, #wheelSpinBtn, .openwhen-card, .jar-container, .music-player';
 
-        // Use event delegation for dynamically added elements or just broad document listening
         document.addEventListener('mouseover', (e) => {
             const isInteractive = e.target.closest(interactiveSelectors) || getComputedStyle(e.target).cursor === 'pointer';
             if (isInteractive) {
-                document.body.classList.add('cursor-hover');
+                cursorDot.classList.add('cursor-hover');
+                cursorOutline.classList.add('cursor-hover');
             } else {
-                document.body.classList.remove('cursor-hover');
+                cursorDot.classList.remove('cursor-hover');
+                cursorOutline.classList.remove('cursor-hover');
             }
         });
     }
