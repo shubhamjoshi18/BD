@@ -11,10 +11,19 @@ const path = require('path');
 const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ========== MIDDLEWARE ==========
+app.use(helmet({
+    contentSecurityPolicy: false,
+}));
+app.use(compression());
+app.use(morgan('combined'));
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
