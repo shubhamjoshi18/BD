@@ -782,6 +782,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ========================================
+    //  MESSAGE IN A BOTTLE LOGIC
+    // ========================================
+    const bottleWrapper = document.getElementById('bottleWrapper');
+    const cork = document.getElementById('cork');
+    const hiddenNote = document.getElementById('hiddenNote');
+    let bottleOpened = false;
+
+    if (bottleWrapper && cork && hiddenNote) {
+        bottleWrapper.addEventListener('click', () => {
+            if (!bottleOpened) {
+                bottleOpened = true;
+                cork.classList.add('pulled');
+                if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                
+                setTimeout(() => {
+                    hiddenNote.classList.add('reveal');
+                }, 800);
+            } else {
+                hiddenNote.classList.toggle('reveal');
+            }
+        });
+    }
+
+    // ========================================
     //  CUSTOM CURSOR
     // ========================================
     const cursorDot = document.querySelector('.cursor-dot');
@@ -825,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Hover effect on interactive elements
-        const interactiveSelectors = 'a, button, input, textarea, select, .balloon-item, .quiz-option, .game-heart, .scratch-card-container, #envelope, #wheelSpinBtn, .openwhen-card, .jar-container, .music-player';
+        const interactiveSelectors = 'a, button, input, textarea, select, .balloon-item, .quiz-option, .game-heart, .scratch-card-container, #envelope, #wheelSpinBtn, .openwhen-card, .jar-container, .music-player, #bottleWrapper, .hidden-note';
 
         document.addEventListener('mouseover', (e) => {
             const isInteractive = e.target.closest(interactiveSelectors) || getComputedStyle(e.target).cursor === 'pointer';

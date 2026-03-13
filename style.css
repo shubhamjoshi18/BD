@@ -3387,3 +3387,171 @@ select {
         height: 260px;
     }
 }
+/* ===========================
+   SECTION 9.3: MESSAGE IN A BOTTLE
+   =========================== */
+.bottle-section {
+    background: linear-gradient(to bottom, var(--bg-dark), #001f3f);
+    overflow: hidden;
+    position: relative;
+}
+
+.ocean-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    margin-top: 2rem;
+    background: rgba(0, 119, 190, 0.1);
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+}
+
+.waves {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200%;
+    height: 100px;
+    background: url(" data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 800 300%27%3E%3Cpath d=%27M0 150 C 150 50 350 250 500 150 C 650 50 850 250 1000 150 L 1000 300 L 0 300 Z%27 fill=%27%2300d4ff%27 fill-opacity=%270.3%27/%3E%3C/svg%3E\);
+ background-size: 50% 100px;
+ animation: waveMove 10s linear infinite;
+}
+
+.wave1 { z-index: 1000; opacity: 1; bottom: 0; animation: waveMove 4s linear infinite; }
+.wave2 { z-index: 999; opacity: 0.5; bottom: 10px; animation: waveMove 6s linear infinite reverse; }
+.wave3 { z-index: 998; opacity: 0.2; bottom: 15px; animation: waveMove 10s linear infinite; }
+.wave4 { z-index: 997; opacity: 0.7; bottom: 20px; animation: waveMove 15s linear infinite reverse; }
+
+@keyframes waveMove {
+ 0% { transform: translateX(0); }
+ 100% { transform: translateX(-50%); }
+}
+
+.bottle-wrapper {
+ position: absolute;
+ left: 50%;
+ bottom: 80px;
+ transform: translateX(-50%);
+ z-index: 1001;
+ animation: bottleFloat 4s ease-in-out infinite;
+ cursor: pointer;
+}
+
+@keyframes bottleFloat {
+ 0%, 100% { transform: translateX(-50%) translateY(0) rotate(-5deg); }
+ 50% { transform: translateX(-50%) translateY(-20px) rotate(5deg); }
+}
+
+.bottle {
+ position: relative;
+ width: 80px;
+ height: 180px;
+}
+
+.bottle-neck {
+ position: absolute;
+ top: 0;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 30px;
+ height: 50px;
+ background: rgba(255, 255, 255, 0.2);
+ border: 2px solid rgba(255, 255, 255, 0.3);
+ border-bottom: none;
+ border-radius: 5px 5px 0 0;
+}
+
+.cork {
+ position: absolute;
+ top: -10px;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 20px;
+ height: 25px;
+ background: #8b4513;
+ border-radius: 3px;
+ transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cork.pulled {
+ transform: translateX(-50%) translateY(-100px) rotate(45deg);
+ opacity: 0;
+}
+
+.bottle-body {
+ position: absolute;
+ bottom: 0;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 80px;
+ height: 130px;
+ background: rgba(255, 255, 255, 0.15);
+ backdrop-filter: blur(5px);
+ border: 2px solid rgba(255, 255, 255, 0.3);
+ border-radius: 0 0 30px 30px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ overflow: hidden;
+}
+
+.bottle-label {
+ font-size: 0.6rem;
+ color: var(--text-secondary);
+ background: rgba(255, 255, 255, 0.2);
+ padding: 2px 8px;
+ border-radius: 4px;
+ font-family: \Dancing Script\, cursive;
+}
+
+.hidden-note {
+ position: absolute;
+ bottom: 10px;
+ left: 50%;
+ transform: translateX(-50%) translateY(200px);
+ width: 150px;
+ background: #fdf5e6;
+ padding: 20px;
+ border-radius: 5px;
+ box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+ transition: all 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+ z-index: 2000;
+ color: #333;
+}
+
+.hidden-note.reveal {
+ transform: translateX(-50%) translateY(-150px);
+}
+
+.note-content {
+ font-family: \Dancing Script\, cursive;
+ font-size: 1.1rem;
+ line-height: 1.4;
+ position: relative;
+}
+
+.note-content::before {
+ content: \\;
+ position: absolute;
+ top: 0; left: 0; width: 100%; height: 100%;
+ background: repeating-linear-gradient(transparent, transparent 1.35rem, #d2b48c 1.35rem, #d2b48c 1.45rem);
+ opacity: 0.3;
+ pointer-events: none;
+}
+
+.note-sig {
+ text-align: right;
+ margin-top: 10px;
+ font-weight: bold;
+}
+
