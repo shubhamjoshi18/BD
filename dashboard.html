@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard - Shikhu's Reactions 💙</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e90ff;
+            --primary-dark: #0a5eb5;
+            --primary-light: #63b3ff;
+            --primary-glow: rgba(30, 144, 255, 0.4);
+            --accent: #00d4ff;
+            --accent-glow: rgba(0, 212, 255, 0.3);
+            --pink: #ff6b9d;
+            --pink-glow: rgba(255, 107, 157, 0.3);
+            --bg-dark: #0a0e1a;
+            --bg-section: #0d1225;
+            --bg-card: rgba(15, 25, 55, 0.7);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.75);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --gold: #ffd700;
+            --success: #4CAF50;
+            --danger: #ff4444;
+            --warning: #ffbb33;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 1.5rem;
+            min-height: 100vh;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(30, 144, 255, 0.1) 0%, transparent 30%),
+                        radial-gradient(circle at 80% 70%, rgba(255, 107, 157, 0.1) 0%, transparent 30%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem 1rem;
+            background: linear-gradient(135deg, rgba(30, 144, 255, 0.1), rgba(0, 212, 255, 0.05));
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '💙';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 80px;
+            opacity: 0.1;
+            color: var(--primary);
+        }
+
+        .header::after {
+            content: '💙';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 80px;
+            opacity: 0.1;
+            color: var(--pink);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent), var(--pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 20px var(--primary-glow));
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .cloud-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(30, 144, 255, 0.2), rgba(0, 212, 255, 0.1));
+            color: var(--accent);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px var(--primary-glow);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent-glow);
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 30px;
+            border-radius: 50px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 5px 20px var(--primary-glow);
+        }
+
+        /* Refresh Button */
+        .refresh-btn {
+            display: block;
+            margin: 0 auto 2rem;
+            padding: 12px 35px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .refresh-btn:hover {
+            border-color: var(--accent);
+            color: white;
+            transform: rotate(180deg);
+        }
+
+        /* Panels */
+        .panel {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px var(--primary-glow);
+        }
+
+        .card video {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            background: #000;
+            border: 1px solid var(--glass-border);
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            word-break: break-all;
+            text-transform: capitalize;
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .card .meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.reaction {
+            background: rgba(30, 144, 255, 0.2);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .badge.reply {
+            background: rgba(255, 107, 157, 0.2);
+            color: var(--pink);
+            border: 1px solid var(--pink);
+        }
+
+        .card a {
+            display: inline-block;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .card a:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px var(--primary-glow);
+        }
+
+        /* Wish Cards */
+        .wish-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wish-card::before {
+            content: '⭐';
+            position: absolute;
+            right: -10px;
+            top: -10px;
+            font-size: 60px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        .wish-card:hover {
+            transform: translateX(5px);
+            border-color: var(--gold);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+        }
+
+        .wish-text {
+            font-size: 1.2rem;
+            color: var(--gold);
+            font-style: italic;
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .wish-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        /* Note Cards */
+        .note-card {
+            background: linear-gradient(135deg, #fff9e6, #fff);
+            border: 1px solid var(--gold);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+            position: relative;
+            color: #333;
+        }
+
+        .note-card::before {
+            content: '💌';
+            position: absolute;
+            left: -10px;
+            top: -10px;
+            font-size: 40px;
+            opacity: 0.2;
+            transform: rotate(-15deg);
+        }
+
+        .note-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .note-content {
+            font-size: 1.1rem;
+            color: #1e3a5f;
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+            font-family: 'Dancing Script', cursive;
+        }
+
+        .note-date {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: right;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--glass);
+            border-radius: 30px;
+            border: 2px dashed var(--glass-border);
+        }
+
+        .empty-emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-text {
+            color: var(--text-muted);
+        }
+
+        /* Error Message */
+        .error-msg {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: var(--danger);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--glass-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .tab {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--glass);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>💙 Shikhu's Dashboard</h1>
+            <p class="subtitle">All the precious moments captured with love</p>
+            <div class="cloud-badge">
+                <span id="storageStatus">☁️ Cloud Storage Active</span>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalVideos">0</div>
+                <div class="stat-label">Total Videos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalWishes">0</div>
+                <div class="stat-label">Birthday Wishes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalNotes">0</div>
+                <div class="stat-label">Love Notes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="storageUsed">0 MB</div>
+                <div class="stat-label">Storage Used</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="videos">
+                <span>📹</span> Reaction Videos
+            </button>
+            <button class="tab" data-tab="wishes">
+                <span>⭐</span> Birthday Wishes
+            </button>
+            <button class="tab" data-tab="notes">
+                <span>💌</span> Love Notes
+            </button>
+        </div>
+
+        <!-- Refresh Button -->
+        <button class="refresh-btn" id="refreshBtn" onclick="loadAll()">
+            🔄 Refresh Dashboard
+        </button>
+
+        <!-- Error Container -->
+        <div id="errorContainer"></div>
+
+        <!-- Videos Panel -->
+        <div class="panel active" id="videosPanel">
+            <div class="grid" id="videosGrid">
+                <!-- Videos will be loaded here -->
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading videos...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wishes Panel -->
+        <div class="panel" id="wishesPanel">
+            <div id="wishesList">
+                <!-- Wishes will be loaded here -->
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading wishes...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Panel -->
+        <div class="panel" id="notesPanel">
+            <div id="notesList">
+                <!-- Notes will be loaded here -->
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading love notes...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        //  Dashboard JavaScript
+        // ========================================
+
+        // Configuration
+        const CONFIG = {
+            SERVER_URL: window.location.origin,
+            REFRESH_INTERVAL: 30000, // 30 seconds
+        };
+
+        // State
+        let currentData = {
+            videos: [],
+            wishes: [],
+            notes: []
+        };
+
+        // ========================================
+        //  Utility Functions
+        // ========================================
+        const Utils = {
+            formatBytes: (bytes, decimals = 2) => {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            },
+
+            formatDate: (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-IN', {
+                    timeZone: 'Asia/Kolkata',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            },
+
+            showError: (message) => {
+                const errorContainer = document.getElementById('errorContainer');
+                errorContainer.innerHTML = `
+                    <div class="error-msg">
+                        ⚠️ ${message}
+                    </div>
+                `;
+                setTimeout(() => {
+                    errorContainer.innerHTML = '';
+                }, 5000);
+            },
+
+            updateStats: () => {
+                document.getElementById('totalVideos').textContent = currentData.videos.length;
+                document.getElementById('totalWishes').textContent = currentData.wishes.length;
+                document.getElementById('totalNotes').textContent = currentData.notes.length;
+                
+                // Calculate total storage
+                const totalBytes = currentData.videos.reduce((acc, video) => acc + (video.size || 0), 0);
+                document.getElementById('storageUsed').textContent = Utils.formatBytes(totalBytes);
+            },
+
+            updateStorageStatus: (database, cloudinary) => {
+                const statusEl = document.getElementById('storageStatus');
+                if (database === 'connected' && cloudinary === 'configured') {
+                    statusEl.innerHTML = '☁️ Cloud Storage Active';
+                    statusEl.style.color = 'var(--accent)';
+                } else if (database === 'connected') {
+                    statusEl.innerHTML = '🗄️ Database Active';
+                    statusEl.style.color = 'var(--primary)';
+                } else {
+                    statusEl.innerHTML = '💾 Local Storage Only';
+                    statusEl.style.color = 'var(--pink)';
+                }
+            }
+        };
+
+        // ========================================
+        //  Data Loading Functions
+        // ========================================
+        async function loadVideos() {
+            try {
+                const response = await fetch('/api/recordings');
+                const data = await response.json();
+                
+                if (data.error) {
+                    Utils.showError(data.error);
+                    currentData.videos = [];
+                } else {
+                    currentData.videos = data.recordings || [];
+                }
+
+                renderVideos();
+            } catch (error) {
+                console.error('Failed to load videos:', error);
+                Utils.showError('Could not connect to server');
+                currentData.videos = [];
+                renderVideos();
+            }
+        }
+
+        async function loadWishes() {
+            try {
+                const response = await fetch('/api/wishes');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.warn(data.error);
+                    currentData.wishes = [];
+                } else {
+                    currentData.wishes = data.wishes || [];
+                }
+
+                renderWishes();
+            } catch (error) {
+                console.error('Failed to load wishes:', error);
+                currentData.wishes = [];
+                renderWishes();
+            }
+        }
+
+        async function loadNotes() {
+            try {
+                const response = await fetch('/api/notes');
+                const notes = await response.json();
+                
+                if (notes.error) {
+                    console.warn(notes.error);
+                    currentData.notes = [];
+                } else {
+                    currentData.notes = notes || [];
+                }
+
+                renderNotes();
+            } catch (error) {
+                console.error('Failed to load notes:', error);
+                currentData.notes = [];
+                renderNotes();
+            }
+        }
+
+        async function loadHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                Utils.updateStorageStatus(data.database, data.cloudinary);
+            } catch (error) {
+                console.error('Failed to load health:', error);
+            }
+        }
+
+        async function loadAll() {
+            // Show loading states
+            document.getElementById('videosGrid').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading videos...</p>
+                </div>
+            `;
+            document.getElementById('wishesList').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading wishes...</p>
+                </div>
+            `;
+            document.getElementById('notesList').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading love notes...</p>
+                </div>
+            `;
+
+            await Promise.all([
+                loadVideos(),
+                loadWishes(),
+                loadNotes(),
+                loadHealth()
+            ]);
+
+            Utils.updateStats();
+        }
+
+        // ========================================
+        //  Render Functions
+        // ========================================
+        function renderVideos() {
+            const grid = document.getElementById('videosGrid');
+            
+            if (currentData.videos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-emoji">📹</div>
+                        <div class="empty-title">No Videos Yet</div>
+                        <div class="empty-text">Videos recorded by Shikhu will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = currentData.videos.map(video => `
+                <div class="card">
+                    <video 
+                        src="${video.url}" 
+                        controls 
+                        playsinline 
+                        preload="metadata"
+                        poster=""
+                    ></video>
+                    <div class="meta">
+                        <span class="badge ${video.type}">${video.type}</span>
+                        <span>${video.sizeFormatted || 'N/A'}</span>
+                    </div>
+                    <h3>${video.name}</h3>
+                    <p>${video.formattedDate || Utils.formatDate(video.date)}</p>
+                    <a href="${video.url}" target="_blank" rel="noopener noreferrer">
+                        🔗 Open Video
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        function renderWishes() {
+            const list = document.getElementById('wishesList');
+            
+            if (currentData.wishes.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-emoji">⭐</div>
+                        <div class="empty-title">No Wishes Yet</div>
+                        <div class="empty-text">Birthday wishes from Shikhu will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = currentData.wishes.map(wish => `
+                <div class="wish-card">
+                    <div class="wish-text">"${wish.wish}"</div>
+                    <div class="wish-date">${wish.date}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderNotes() {
+            const list = document.getElementById('notesList');
+            
+            if (currentData.notes.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-emoji">💌</div>
+                        <div class="empty-title">No Love Notes Yet</div>
+                        <div class="empty-text">Love notes from Shikhu will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = currentData.notes.map(note => `
+                <div class="note-card">
+                    <div class="note-content">💌 ${note.content}</div>
+                    <div class="note-date">${note.date}</div>
+                </div>
+            `).join('');
+        }
+
+        // ========================================
+        //  Tab Switching
+        // ========================================
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            const panels = {
+                videos: document.getElementById('videosPanel'),
+                wishes: document.getElementById('wishesPanel'),
+                notes: document.getElementById('notesPanel')
+            };
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Hide all panels
+                    Object.values(panels).forEach(panel => {
+                        panel.classList.remove('active');
+                    });
+                    
+                    // Show selected panel
+                    const tabName = tab.dataset.tab;
+                    if (panels[tabName]) {
+                        panels[tabName].classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // ========================================
+        //  Auto Refresh
+        // ========================================
+        function initAutoRefresh() {
+            // Load immediately
+            loadAll();
+
+            // Set up auto-refresh
+            setInterval(() => {
+                console.log('🔄 Auto-refreshing dashboard...');
+                loadAll();
+            }, CONFIG.REFRESH_INTERVAL);
+        }
+
+        // ========================================
+        //  Initialize
+        // ========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+            initAutoRefresh();
+        });
+
+        // Make loadAll available globally for refresh button
+        window.loadAll = loadAll;
+    </script>
+</body>
+</html>

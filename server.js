@@ -1,294 +1,747 @@
 // =============================================
-//  Backend Server - Video + Wish Storage (Cloud Mode)
-//  Saves reaction videos to Cloudinary & wishes to MongoDB
+//  Backend Server - Video + Wish Storage
+//  For Shikhu's Birthday 💙
+//  Optimized Production Version
 // =============================================
 
-require('dotenv').config();
-const express = require('express');
-const multer = require('multer');
-const cors = require('cors');
-const path = require('path');
-const mongoose = require('mongoose');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const helmet = require('helmet');
-const compression = require('compression');
-const morgan = require('morgan');
+require("dotenv").config();
+const express = require("express");
+const multer = require("multer");
+const cors = require("cors");
+const path = require("path");
+const mongoose = require("mongoose");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const hpp = require("hpp");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ========== CONFIGURATION ==========
+const CONFIG = {
+  MAX_FILE_SIZE: 500 * 1024 * 1024, // 500MB
+  RATE_LIMIT_WINDOW: 15 * 60 * 1000, // 15 minutes
+  RATE_LIMIT_MAX: 100, // Max requests per window
+  UPLOAD_PATH: "shikhu-birthday",
+  ALLOWED_FORMATS: ["mp4", "webm", "mov", "avi", "mkv"],
+  MAX_WISH_LENGTH: 500,
+  MAX_NOTE_LENGTH: 200,
+};
+
 // ========== MIDDLEWARE ==========
-app.use(helmet({ contentSecurityPolicy: false }));
+// Security middleware
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdnjs.cloudflare.com",
+        ],
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+        mediaSrc: ["'self'", "https://res.cloudinary.com"],
+        connectSrc: ["'self'"],
+      },
+    },
+  }),
+);
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: CONFIG.RATE_LIMIT_WINDOW,
+  max: CONFIG.RATE_LIMIT_MAX,
+  message: { error: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api/", limiter);
+
+// Data sanitization against NoSQL injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
+
+// Prevent parameter pollution
+app.use(hpp());
+
+// Compression
 app.use(compression());
-app.use(morgan('dev')); // FIX: use 'dev' format — cleaner logs
-app.use(cors());
-app.use(express.json({ limit: '1mb' })); // FIX: add body size limit
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
+
+// Logging
+app.use(morgan("combined")); // Better for production
+
+// CORS configuration
+const corsOptions = {
+  origin:
+    process.env.NODE_ENV === "production"
+      ? process.env.ALLOWED_ORIGIN?.split(",") || "*"
+      : "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+
+// Body parsing
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Static files - serve from public directory
+app.use(express.static(path.join(__dirname, "public")));
+
+// Create uploads directory if it doesn't exist (for local storage fallback)
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve uploads folder statically (for local storage fallback)
+app.use("/uploads", express.static(uploadsDir));
 
 // ========== DATABASE CONFIG (MongoDB) ==========
-// FIX: Removed deprecated options useNewUrlParser & unifiedTopology (not needed in Mongoose 6+)
 const isDBConfigured = !!process.env.MONGODB_URI;
-if (isDBConfigured) {
-    mongoose.connect(process.env.MONGODB_URI)
-        .then(() => console.log('🗄️  MongoDB Connected!'))
-        .catch(err => console.error('❌ MongoDB Connection Error:', err.message));
 
-    mongoose.connection.on('disconnected', () => console.warn('⚠️  MongoDB disconnected.'));
-    mongoose.connection.on('error', (err) => console.error('❌ MongoDB runtime error:', err.message));
+if (isDBConfigured) {
+  const mongooseOptions = {
+    autoIndex: process.env.NODE_ENV !== "production", // Disable auto-index in production
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    family: 4, // Use IPv4, skip trying IPv6
+  };
+
+  mongoose
+    .connect(process.env.MONGODB_URI, mongooseOptions)
+    .then(() => console.log("🗄️  MongoDB Connected!"))
+    .catch((err) => {
+      console.error("❌ MongoDB Connection Error:", err.message);
+      process.exit(1);
+    });
+
+  mongoose.connection.on("disconnected", () =>
+    console.warn("⚠️  MongoDB disconnected."),
+  );
+  mongoose.connection.on("error", (err) =>
+    console.error("❌ MongoDB runtime error:", err.message),
+  );
+  mongoose.connection.on("reconnected", () =>
+    console.log("🔄 MongoDB reconnected."),
+  );
 } else {
-    console.warn('⚠️  WARNING: MONGODB_URI not set in .env. Database features will fail.');
+  console.warn(
+    "⚠️  WARNING: MONGODB_URI not set in .env. Database features will fail.",
+  );
 }
 
-// FIX: Added schema validation — required, trim, and maxlength constraints
-const videoSchema = new mongoose.Schema({
-    filename: { type: String, default: 'cloudinary-video' },
+// ========== SCHEMAS ==========
+const videoSchema = new mongoose.Schema(
+  {
+    filename: { type: String, default: "cloudinary-video" },
     url: { type: String, required: true },
-    size: { type: Number, default: 0 },
-    type: { type: String, enum: ['reaction', 'reply', 'other'], default: 'reaction' },
-    date: { type: Date, default: Date.now }
-});
-const Video = mongoose.model('Video', videoSchema);
+    size: { type: Number, default: 0, min: 0 },
+    type: {
+      type: String,
+      enum: ["reaction", "reply", "other"],
+      default: "reaction",
+      required: true,
+    },
+    date: { type: Date, default: Date.now, index: true },
+    metadata: {
+      duration: Number,
+      format: String,
+      resolution: String,
+    },
+  },
+  { timestamps: true },
+);
 
-// FIX: wish is now required and trimmed — prevents empty wish saves
-const wishSchema = new mongoose.Schema({
-    wish: { type: String, required: true, trim: true, maxlength: 500 },
-    date: { type: Date, default: Date.now }
-});
-const Wish = mongoose.model('Wish', wishSchema);
+const wishSchema = new mongoose.Schema(
+  {
+    wish: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: CONFIG.MAX_WISH_LENGTH,
+      validate: {
+        validator: (v) => v.length > 0,
+        message: "Wish cannot be empty",
+      },
+    },
+    date: { type: Date, default: Date.now, index: true },
+  },
+  { timestamps: true },
+);
+
+const noteSchema = new mongoose.Schema(
+  {
+    content: {
+      type: String,
+      required: true,
+      maxlength: CONFIG.MAX_NOTE_LENGTH,
+      trim: true,
+      validate: {
+        validator: (v) => v.length > 0,
+        message: "Note cannot be empty",
+      },
+    },
+    date: { type: Date, default: Date.now, index: true },
+  },
+  { timestamps: true },
+);
+
+// Add indexes for better query performance
+videoSchema.index({ date: -1, type: 1 });
+wishSchema.index({ date: -1 });
+noteSchema.index({ date: -1 });
+
+const Video = mongoose.model("Video", videoSchema);
+const Wish = mongoose.model("Wish", wishSchema);
+const Note = mongoose.model("Note", noteSchema);
 
 // ========== STORAGE CONFIG (Cloudinary) ==========
-const isCloudinaryConfigured = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+const isCloudinaryConfigured = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
 
 if (isCloudinaryConfigured) {
-    cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
-    });
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true, // Force HTTPS
+  });
 } else {
-    console.warn('⚠️  WARNING: Cloudinary credentials not set in .env. Video uploads will fail.');
+  console.warn(
+    "⚠️  WARNING: Cloudinary credentials not set in .env. Video uploads will fail.",
+  );
 }
 
-const storage = new CloudinaryStorage({
+// Configure multer storage
+let upload;
+if (isCloudinaryConfigured) {
+  const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'shikhu-birthday',
-        resource_type: 'video',
-        allowed_formats: ['mp4', 'webm', 'mov']
-    }
-});
-const upload = multer({ storage: storage, limits: { fileSize: 500 * 1024 * 1024 } });
+      folder: CONFIG.UPLOAD_PATH,
+      resource_type: "video",
+      allowed_formats: CONFIG.ALLOWED_FORMATS,
+      transformation: [
+        { quality: "auto", fetch_format: "auto" }, // Optimize videos
+      ],
+    },
+  });
+  upload = multer({
+    storage: storage,
+    limits: { fileSize: CONFIG.MAX_FILE_SIZE },
+    fileFilter: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase().substring(1);
+      if (CONFIG.ALLOWED_FORMATS.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(
+          new Error(
+            `Invalid file format. Allowed: ${CONFIG.ALLOWED_FORMATS.join(", ")}`,
+          ),
+        );
+      }
+    },
+  });
+} else {
+  // Fallback to local storage if Cloudinary not configured
+  const localStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, `shikhu-${uniqueSuffix}${path.extname(file.originalname)}`);
+    },
+  });
+  upload = multer({
+    storage: localStorage,
+    limits: { fileSize: CONFIG.MAX_FILE_SIZE },
+    fileFilter: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase().substring(1);
+      if (CONFIG.ALLOWED_FORMATS.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(
+          new Error(
+            `Invalid file format. Allowed: ${CONFIG.ALLOWED_FORMATS.join(", ")}`,
+          ),
+        );
+      }
+    },
+  });
+}
 
-// ========== VIDEO UPLOAD ==========
+// ========== UTILITY FUNCTIONS ==========
+const logger = {
+  info: (message, data = {}) => {
+    console.log(`📌 [${new Date().toISOString()}] INFO:`, message, data);
+  },
+  error: (message, error) => {
+    console.error(
+      `❌ [${new Date().toISOString()}] ERROR:`,
+      message,
+      error?.message || error,
+    );
+  },
+  success: (message, data = {}) => {
+    console.log(`✅ [${new Date().toISOString()}] SUCCESS:`, message, data);
+  },
+};
 
-app.post('/api/upload-video', (req, res, next) => {
-    upload.single('video')(req, res, function (err) {
-        if (err instanceof multer.MulterError) {
-             console.error('❌ Multer error:', err);
-             return res.status(400).json({ error: 'File too large or upload error' });
-        } else if (err) {
-             console.error('❌ Unknown upload error:', err);
-             return res.status(500).json({ error: 'Server error during upload' });
-        }
-        next();
+const formatBytes = (bytes, decimals = 2) => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+};
+
+// ========== API ROUTES ==========
+
+/**
+ * @route   POST /api/upload-video
+ * @desc    Upload video to Cloudinary/local storage
+ * @access  Public
+ */
+app.post(
+  "/api/upload-video",
+  (req, res, next) => {
+    upload.single("video")(req, res, function (err) {
+      if (err instanceof multer.MulterError) {
+        logger.error("Multer error:", err);
+        return res.status(400).json({
+          error:
+            err.code === "LIMIT_FILE_SIZE"
+              ? `File too large. Max size: ${formatBytes(CONFIG.MAX_FILE_SIZE)}`
+              : "Upload error",
+        });
+      } else if (err) {
+        logger.error("Unknown upload error:", err);
+        return res
+          .status(500)
+          .json({ error: err.message || "Server error during upload" });
+      }
+      next();
     });
-}, async (req, res) => {
+  },
+  async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ error: 'No file received' });
-        const type = req.body.type || 'reaction';
+      if (!req.file) {
+        return res.status(400).json({ error: "No file received" });
+      }
 
-        console.log(`\n🎬 ========================================`);
-        console.log(`🎬 VIDEO UPLOADED TO CLOUDINARY! (${type})`);
-        console.log(`🎬 URL: ${req.file.path}`);
-        console.log(`🎬 ========================================\n`);
+      const type = req.body.type || "reaction";
 
-        if (isDBConfigured) {
-            try {
-                const newVideo = new Video({
-                    filename: req.file.filename,
-                    url: req.file.path,
-                    size: req.file.size || 0,
-                    type: type
-                });
-                await newVideo.save();
-            } catch (dbErr) {
-                console.error('❌ Failed to save video to MongoDB:', dbErr.message);
-            }
+      // Generate URL for local files
+      let fileUrl = req.file.path;
+      if (!isCloudinaryConfigured && req.file.destination) {
+        fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      }
+
+      logger.success("Video uploaded", {
+        type,
+        size: req.file.size,
+        filename: req.file.filename,
+      });
+
+      // Save to database if configured
+      if (isDBConfigured) {
+        try {
+          const newVideo = new Video({
+            filename: req.file.filename || "video",
+            url: fileUrl,
+            size: req.file.size || 0,
+            type: type,
+            metadata: {
+              format: req.file.mimetype,
+              size: formatBytes(req.file.size),
+            },
+          });
+          await newVideo.save();
+          logger.info("Video metadata saved to DB");
+        } catch (dbErr) {
+          logger.error("Failed to save video to MongoDB:", dbErr);
         }
+      }
 
-        res.json({ success: true, url: req.file.path });
+      res.json({
+        success: true,
+        url: fileUrl,
+        message: "Video uploaded successfully!",
+      });
     } catch (error) {
-        console.error('❌ Unexpected error in upload route:', error.message);
-        res.status(500).json({ error: 'Internal server error processing the video upload.' });
+      logger.error("Unexpected error in upload route:", error);
+      res
+        .status(500)
+        .json({ error: "Internal server error processing the video upload." });
     }
-});
+  },
+);
 
-// ========== WISH STORAGE ==========
-
-app.post('/api/wish', async (req, res) => {
+/**
+ * @route   POST /api/wish
+ * @desc    Save a birthday wish
+ * @access  Public
+ */
+app.post("/api/wish", async (req, res) => {
+  try {
     const { wish } = req.body;
-    // FIX: also check for empty string after trimming
-    if (!wish || !wish.trim()) return res.status(400).json({ error: 'No wish provided' });
 
-    console.log(`\n⭐ ========================================`);
-    console.log(`⭐ WISH RECEIVED FROM SHIKHU!`);
-    console.log(`⭐ "${wish.trim()}"`);
-    console.log(`⭐ ========================================\n`);
+    if (!wish || !wish.trim()) {
+      return res.status(400).json({ error: "No wish provided" });
+    }
+
+    const trimmedWish = wish.trim().substring(0, CONFIG.MAX_WISH_LENGTH);
+
+    logger.success("Wish received", { wish: trimmedWish });
 
     if (isDBConfigured) {
-        try {
-            const newWish = new Wish({ wish: wish.trim() });
-            await newWish.save();
-            return res.json({ success: true, message: 'Wish saved to MongoDB!' });
-        } catch (err) {
-            console.error('❌ Failed to save wish to MongoDB:', err.message);
-            return res.status(500).json({ error: 'Database Error' });
-        }
+      try {
+        const newWish = new Wish({ wish: trimmedWish });
+        await newWish.save();
+        return res.json({
+          success: true,
+          message: "✨ Your wish has been saved to the stars!",
+        });
+      } catch (dbErr) {
+        logger.error("Failed to save wish to MongoDB:", dbErr);
+        return res.status(500).json({ error: "Database Error" });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "✨ Your wish has been sent to the universe!",
+    });
+  } catch (error) {
+    logger.error("Wish endpoint error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/**
+ * @route   GET /api/wishes
+ * @desc    Get all wishes
+ * @access  Public
+ */
+app.get("/api/wishes", async (req, res) => {
+  try {
+    if (!isDBConfigured) {
+      return res.json({
+        wishes: [],
+        count: 0,
+        error: "DB not configured",
+        message: "Database not configured. Using local storage fallback.",
+      });
+    }
+
+    const wishes = await Wish.find()
+      .sort({ date: -1 })
+      .limit(100) // Limit to last 100 wishes
+      .lean();
+
+    const mappedWishes = wishes.map((w) => ({
+      wish: w.wish,
+      date: w.date.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    }));
+
+    res.json({
+      wishes: mappedWishes,
+      count: mappedWishes.length,
+      total: await Wish.countDocuments(),
+    });
+  } catch (err) {
+    logger.error("Error fetching wishes:", err);
+    res.status(500).json({ error: "Database Error" });
+  }
+});
+
+/**
+ * @route   GET /api/recordings
+ * @desc    Get all video recordings
+ * @access  Public
+ */
+app.get("/api/recordings", async (req, res) => {
+  try {
+    if (!isDBConfigured) {
+      return res.json({
+        recordings: [],
+        count: 0,
+        error: "DB not configured",
+        message:
+          "Database not configured. Check uploads folder for local files.",
+      });
+    }
+
+    const videos = await Video.find()
+      .sort({ date: -1 })
+      .limit(50) // Limit to last 50 videos
+      .lean();
+
+    const mappedVideos = videos.map((v) => ({
+      name: v.filename || "Birthday Video",
+      url: v.url,
+      size: v.size,
+      sizeFormatted: v.size > 0 ? formatBytes(v.size) : "N/A",
+      type: v.type,
+      date: v.date ? v.date.toISOString() : new Date().toISOString(),
+      formattedDate: v.date
+        ? v.date.toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "Unknown",
+    }));
+
+    res.json({
+      recordings: mappedVideos,
+      count: mappedVideos.length,
+      total: await Video.countDocuments(),
+    });
+  } catch (err) {
+    logger.error("Error fetching recordings:", err);
+    res.status(500).json({ error: "Database Error" });
+  }
+});
+
+/**
+ * @route   POST /api/notes
+ * @desc    Save a love note
+ * @access  Public
+ */
+app.post("/api/notes", async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: "Note content required" });
+    }
+
+    const trimmedContent = content.trim().substring(0, CONFIG.MAX_NOTE_LENGTH);
+
+    logger.success("Love note received", { content: trimmedContent });
+
+    if (isDBConfigured) {
+      try {
+        const note = new Note({ content: trimmedContent });
+        await note.save();
+        res.json({
+          success: true,
+          message: "💌 Your love note has been saved!",
+        });
+      } catch (err) {
+        logger.error("Error saving note:", err);
+        res.status(500).json({ error: "Database error" });
+      }
     } else {
-        return res.json({ success: true, message: 'Wish discarded (No DB configured)' });
+      res.json({
+        success: true,
+        message: "💌 Your love note has been sent!",
+      });
     }
+  } catch (error) {
+    logger.error("Note endpoint error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
-app.get('/api/wishes', async (req, res) => {
-    if (!isDBConfigured) return res.json({ wishes: [], count: 0, error: 'DB not configured' });
-    try {
-        const wishes = await Wish.find().sort({ date: -1 }).lean();
-        const mappedWishes = wishes.map(w => ({
-            wish: w.wish,
-            date: w.date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) // FIX: specific timezone
-        }));
-        res.json({ wishes: mappedWishes, count: mappedWishes.length });
-    } catch (err) {
-        console.error('❌ Error fetching wishes:', err.message);
-        res.status(500).json({ error: 'Database Error' });
+/**
+ * @route   GET /api/notes
+ * @desc    Get all love notes
+ * @access  Public
+ */
+app.get("/api/notes", async (req, res) => {
+  try {
+    if (!isDBConfigured) {
+      return res.json([]);
     }
+
+    const notes = await Note.find().sort({ date: -1 }).limit(50).lean();
+
+    const mappedNotes = notes.map((n) => ({
+      content: n.content,
+      date: n.date.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    }));
+
+    res.json(mappedNotes);
+  } catch (err) {
+    logger.error("Error fetching notes:", err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
-// ========== RECORDINGS LIST ==========
-
-app.get('/api/recordings', async (req, res) => {
-    if (!isDBConfigured) return res.json({ recordings: [], count: 0, error: 'DB not configured' });
-    try {
-        const videos = await Video.find().sort({ date: -1 }).lean();
-        const mappedVideos = videos.map(v => ({
-            name: v.filename || 'Cloudinary Video',
-            url: v.url,
-            // FIX: prevent divide-by-zero for 0-byte files
-            sizeMB: v.size > 0 ? (v.size / 1024 / 1024).toFixed(2) + ' MB' : 'N/A',
-            // FIX: serialize date as ISO string for consistent parsing in dashboard
-            date: v.date ? v.date.toISOString() : new Date().toISOString()
-        }));
-        res.json({ recordings: mappedVideos, count: mappedVideos.length });
-    } catch (err) {
-        console.error('❌ Error fetching recordings:', err.message);
-        res.status(500).json({ error: 'Database Error' });
-    }
+/**
+ * @route   GET /api/health
+ * @desc    Health check endpoint
+ * @access  Public
+ */
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    database: isDBConfigured ? "connected" : "not configured",
+    cloudinary: isCloudinaryConfigured ? "configured" : "not configured",
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+  });
 });
 
 // ========== DASHBOARD ==========
+// Serve dashboard.html from public folder
+app.get("/dashboard", (req, res) => {
+  const dashboardPath = path.join(__dirname, "public", "dashboard.html");
 
-app.get('/dashboard', (req, res) => {
+  // Check if dashboard.html exists
+  if (fs.existsSync(dashboardPath)) {
+    res.sendFile(dashboardPath);
+  } else {
+    // If not, create a simple dashboard
     res.send(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Shikhu's Reactions</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;background:#0a0e1a;color:white;padding:1.5rem;min-height:100vh}
-        h1{text-align:center;margin-bottom:.5rem;background:linear-gradient(135deg,#1e90ff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:2rem}
-        .cloud-badge{display:inline-block;background:rgba(30,144,255,0.2);color:#00d4ff;padding:4px 10px;border-radius:20px;font-size:0.8rem;margin:0 auto 2rem;border:1px solid rgba(0,212,255,0.3);text-align:center}
-        .text-center{text-align:center}
-        .tabs{display:flex;justify-content:center;gap:1rem;margin:1.5rem 0}
-        .tab{padding:10px 25px;border-radius:30px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);cursor:pointer;font-size:.9rem;transition:all .3s}
-        .tab.active{background:linear-gradient(135deg,#1e90ff,#00d4ff);color:white;border-color:transparent}
-        .panel{display:none}.panel.active{display:block}
-        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem}
-        .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem}
-        .card video{width:100%;border-radius:10px;margin-bottom:1rem;background:#000}
-        .card h3{font-size:.85rem;color:#00d4ff;margin-bottom:.5rem;word-break:break-all}
-        .card p{font-size:.8rem;color:rgba(255,255,255,.5)}
-        .card a{display:inline-block;margin-top:.8rem;padding:8px 20px;background:linear-gradient(135deg,#1e90ff,#00d4ff);color:white;border-radius:30px;text-decoration:none;font-size:.8rem}
-        .empty{text-align:center;color:rgba(255,255,255,.3);font-size:1.1rem;margin-top:3rem}
-        .refresh{display:block;margin:0 auto 1.5rem;padding:8px 25px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:30px;cursor:pointer;font-size:.85rem}
-        .wish-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;margin-bottom:1rem}
-        .wish-card .wish-text{font-size:1.1rem;color:#00d4ff;font-style:italic}
-        .wish-card .wish-date{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:.5rem}
-        .error-msg{background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:#ff4444;padding:1rem;border-radius:10px;text-align:center;margin-bottom:1.5rem}
-    </style>
-</head>
-<body>
-    <h1>💙 Shikhu's Dashboard</h1>
-    <div class="text-center"><div class="cloud-badge">☁️ Cloud Storage Active</div></div>
-    
-    <div class="tabs">
-        <div class="tab active" data-tab="videos">📹 Reaction Videos</div>
-        <div class="tab" data-tab="wishes">⭐ Her Wishes</div>
-    </div>
-    <button class="refresh" onclick="loadAll()">🔄 Refresh</button>
-    <div id="error-container"></div>
-    <div class="panel active" id="videos-panel"><div class="grid" id="grid"></div></div>
-    <div class="panel" id="wishes-panel"><div id="wishList"></div></div>
-    <script>
-        document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
-            document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-            t.classList.add('active');
-            document.getElementById(t.dataset.tab+'-panel').classList.add('active');
-        }));
-        async function loadAll(){await loadVideos();await loadWishes()}
-        async function loadVideos(){
-            try {
-                const r=await fetch('/api/recordings');const d=await r.json();const g=document.getElementById('grid');
-                if(d.error){document.getElementById('error-container').innerHTML='<div class="error-msg">⚠️ '+d.error+'</div>';return;}
-                if(d.count===0){g.innerHTML='<p class="empty">No recordings yet... 💙</p>';return}
-                // FIX: use new Date(r.date).toLocaleString() since date is now a proper ISO string
-                g.innerHTML=d.recordings.map(r=>'<div class="card"><video src="'+r.url+'" controls playsinline preload="metadata"></video><h3>'+r.name+'</h3><p>'+r.sizeMB+' | '+new Date(r.date).toLocaleString('en-IN')+'</p><a href="'+r.url+'" target="_blank">🔗 Open File</a></div>').join('');
-            } catch(e) { document.getElementById('error-container').innerHTML='<div class="error-msg">⚠️ Could not connect to server.</div>'; }
-        }
-        async function loadWishes(){
-            try {
-                const r=await fetch('/api/wishes');const d=await r.json();const w=document.getElementById('wishList');
-                if(d.error)return;
-                if(d.count===0){w.innerHTML='<p class="empty">No wishes yet... ⭐</p>';return}
-                w.innerHTML=d.wishes.map(w=>'<div class="wish-card"><p class="wish-text">"'+w.wish+'"</p><p class="wish-date">'+w.date+'</p></div>').join('');
-            } catch(e) { console.error('Failed to load wishes', e); }
-        }
-        loadAll();
-    </script>
-</body>
-</html>`);
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Dashboard</title>
+                <style>
+                    body { font-family: Arial; background: #0a0e1a; color: white; padding: 20px; }
+                    h1 { color: #00d4ff; }
+                </style>
+            </head>
+            <body>
+                <h1>💙 Dashboard Placeholder</h1>
+                <p>Create a dashboard.html file in the public folder for full functionality.</p>
+                <p>API is working! <a href="/api/health">Check health</a></p>
+            </body>
+            </html>
+        `);
+  }
 });
 
-// FIX: Use regex for 404 — Express 4 wildcard `/api/*` requires `/api/*path`
-app.use(/^\/api\/.*/, (req, res) => {
-    res.status(404).json({ error: 'API route not found' });
+// ========== ERROR HANDLING ==========
+// 404 handler for API routes
+app.use("/api/*", (req, res) => {
+  res.status(404).json({
+    error: "API route not found",
+    message: "The requested API endpoint does not exist",
+  });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n💙 ========================================`);
-    console.log(`💙  Shikhu's Birthday Server Running!`);
-    console.log(`💙 ========================================`);
-    console.log(`🌐 Website:    http://localhost:${PORT}`);
-    console.log(`📹 Dashboard:  http://localhost:${PORT}/dashboard`);
-    console.log(`☁️  Storage:    Cloudinary`);
-    console.log(`🗄️  Database:   MongoDB`);
-    console.log(`💙 ========================================\n`);
+// Global error handler
+app.use((err, req, res, next) => {
+  logger.error("Unhandled error:", err);
+
+  // Mongoose validation error
+  if (err.name === "ValidationError") {
+    return res.status(400).json({
+      error: "Validation Error",
+      details: Object.values(err.errors).map((e) => e.message),
+    });
+  }
+
+  // Mongoose duplicate key error
+  if (err.code === 11000) {
+    return res.status(400).json({ error: "Duplicate entry" });
+  }
+
+  // Default error
+  res.status(err.status || 500).json({
+    error:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message,
+  });
 });
 
-// FIX: Global safety net for unhandled promise rejections
-process.on('unhandledRejection', (reason) => {
-    console.error('❌ Unhandled Promise Rejection:', reason);
+// ========== SERVER START ==========
+const server = app.listen(PORT, "0.0.0.0", () => {
+  console.log(`\n💙 ========================================`);
+  console.log(`💙  Shikhu's Birthday Server Running!`);
+  console.log(`💙 ========================================`);
+  console.log(`🌐 Website:    http://localhost:${PORT}`);
+  console.log(`📹 Dashboard:  http://localhost:${PORT}/dashboard`);
+  console.log(`📊 Health:     http://localhost:${PORT}/api/health`);
+  console.log(
+    `☁️  Storage:    ${isCloudinaryConfigured ? "Cloudinary" : "Local"}`,
+  );
+  console.log(
+    `🗄️  Database:   ${isDBConfigured ? "MongoDB" : "Not configured"}`,
+  );
+  console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`💙 ========================================\n`);
 });
 
-// FIX: Graceful shutdown
-process.on('SIGTERM', async () => {
-    console.log('🛑 Shutting down server gracefully...');
-    await mongoose.connection.close();
+// ========== GRACEFUL SHUTDOWN ==========
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error("Unhandled Promise Rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught Exception:", error);
+  setTimeout(() => process.exit(1), 1000);
+});
+
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+
+async function gracefulShutdown(signal) {
+  console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
+
+  server.close(async () => {
+    console.log("✅ HTTP server closed.");
+
+    if (isDBConfigured) {
+      try {
+        await mongoose.connection.close();
+        console.log("✅ MongoDB connection closed.");
+      } catch (err) {
+        console.error("❌ Error closing MongoDB connection:", err);
+      }
+    }
+
+    console.log("💙 Goodbye!");
     process.exit(0);
-});
+  });
 
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error("❌ Force shutdown after timeout");
+    process.exit(1);
+  }, 10000);
+}
