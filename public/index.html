@@ -27,9 +27,9 @@
     
     <link rel="stylesheet" href="style.css">
     
-    <!-- Preload critical assets -->
-    <link rel="preload" href="Confession_at_Midnight.mp3" as="audio">
-    <link rel="preload" href="before.mp4" as="video">
+    <!-- Preload critical assets with correct paths -->
+    <link rel="preload" href="/assets/audio/Confession_at_Midnight.mp3" as="audio">
+    <link rel="preload" href="/assets/video/before.mp4" as="video">
     <link rel="preload" href="webgl.js" as="script">
 </head>
 
@@ -234,16 +234,22 @@
             <div class="gallery-scroll fade-in">
                 <div class="gallery-track">
                     <div class="gallery-card" data-caption="Our first memory together 💙">
-                        <img src="2.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                        <img src="/assets/images/1.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
                     </div>
                     <div class="gallery-card" data-caption="A moment I'll never forget 🌟">
-                        <img src="4.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                        <img src="/assets/images/2.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
                     </div>
                     <div class="gallery-card" data-caption="You looked so beautiful here 💫">
-                        <img src="1.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                        <img src="/assets/images/3.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
                     </div>
                     <div class="gallery-card" data-caption="Together, always 💕">
-                        <img src="6.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                        <img src="/assets/images/4.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                    </div>
+                    <div class="gallery-card" data-caption="A special moment 💙">
+                        <img src="/assets/images/5.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                    </div>
+                    <div class="gallery-card" data-caption="Forever in my heart 💫">
+                        <img src="/assets/images/6.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
                     </div>
                 </div>
             </div>
@@ -544,11 +550,11 @@
             <p class="videomsg-subtitle fade-in">I recorded this just for you, Shikhu 💙</p>
             <div class="videomsg-player fade-in">
                 <div class="videomsg-placeholder" id="videoPlaceholder">
-                    <!-- Your video message for Shikhu -->
+                    <!-- Your video message for Shikhu with correct path -->
                     <video id="myVideoMsg" controls playsinline preload="metadata" poster="">
-                        <source src="before.mp4" type="video/mp4">
+                        <source src="/assets/video/before.mp4" type="video/mp4">
                         <!-- Fallback for older browsers -->
-                        <p>Your browser doesn't support HTML5 video. Here is a <a href="before.mp4">link to the video</a> instead.</p>
+                        <p>Your browser doesn't support HTML5 video. Here is a <a href="/assets/video/before.mp4">link to the video</a> instead.</p>
                     </video>
                     <div class="videomsg-overlay" id="videoOverlay">
                         <div class="play-icon">▶</div>
@@ -642,7 +648,7 @@
         </div>
     </div>
     <audio id="bgMusic" loop preload="metadata">
-        <source src="Confession_at_Midnight.mp3" type="audio/mpeg">
+        <source src="/assets/audio/Confession_at_Midnight.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Custom Cursor -->
