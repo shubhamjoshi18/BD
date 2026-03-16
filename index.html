@@ -10,6 +10,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
+    <!-- Favicon - Blue Heart Emoji (Fixes 404 error) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%231e90ff'>💙</text></svg>">
+    <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%231e90ff'>💙</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%231e90ff'>💙</text></svg>">
+    
     <!-- Preconnect for faster font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +29,7 @@
     
     <!-- Preload critical assets -->
     <link rel="preload" href="Confession_at_Midnight.mp3" as="audio">
+    <link rel="preload" href="before.mp4" as="video">
     <link rel="preload" href="webgl.js" as="script">
 </head>
 
@@ -538,14 +544,11 @@
             <p class="videomsg-subtitle fade-in">I recorded this just for you, Shikhu 💙</p>
             <div class="videomsg-player fade-in">
                 <div class="videomsg-placeholder" id="videoPlaceholder">
-                    <!-- Replace this src with your actual video file -->
+                    <!-- Your video message for Shikhu -->
                     <video id="myVideoMsg" controls playsinline preload="metadata" poster="">
-
-                        <!-- PUT YOUR VIDEO FILE HERE: -->
                         <source src="before.mp4" type="video/mp4">
-
-
-                        <!-- <source src="my-message.webm" type="video/webm"> -->
+                        <!-- Fallback for older browsers -->
+                        <p>Your browser doesn't support HTML5 video. Here is a <a href="before.mp4">link to the video</a> instead.</p>
                     </video>
                     <div class="videomsg-overlay" id="videoOverlay">
                         <div class="play-icon">▶</div>

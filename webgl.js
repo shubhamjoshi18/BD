@@ -1,5 +1,6 @@
 // webgl.js - Optimized 3D Background Engine for Shikhu's Birthday 💙
 // Features: Particle system, mouse parallax, scroll effects, performance optimized
+// FINAL PRODUCTION VERSION - ALL BUGS FIXED
 
 (function () {
   "use strict";
@@ -15,9 +16,9 @@
       white: new THREE.Color("#ffffff"),
     },
 
-    // Particle settings
+    // Particle settings - adjusted for performance
     PARTICLES: {
-      COUNT: window.innerWidth < 768 ? 2000 : 3500, // Fewer on mobile
+      COUNT: window.innerWidth < 768 ? 1500 : 3000, // Optimized count
       SIZE: 1.2,
       OPACITY: 0.8,
       SPREAD: {
@@ -55,10 +56,27 @@
     // Performance
     PERFORMANCE: {
       MAX_PIXEL_RATIO: 2,
-      FRAME_SKIP: false,
       ENABLE_FOG: true,
+      MOUSE_THROTTLE: 16, // ms
+      RESIZE_DEBOUNCE: 250, // ms
     },
   };
+
+  // ========== GLOBAL VARIABLES ==========
+  let scene, camera, renderer;
+  let particlesMesh, boundingSphere, extraParticles;
+  let animationFrameId = null;
+  let mouse = {
+    x: 0,
+    y: 0,
+    targetX: 0,
+    targetY: 0,
+    windowHalfX: window.innerWidth / 2,
+    windowHalfY: window.innerHeight / 2,
+  };
+  let scrollY = 0;
+  let targetScrollY = 0;
+  let clock = new THREE.Clock();
 
   // ========== INITIALIZATION ==========
   function initWebGL() {
@@ -77,161 +95,96 @@
       return;
     }
 
-    // ========== SCENE SETUP ==========
-    const scene = new THREE.Scene();
+    // Setup scene, camera, renderer
+    if (!setupScene(canvas)) return;
 
-    // Add fog for depth effect (optional)
-    if (CONFIG.PERFORMANCE.ENABLE_FOG) {
-      scene.fog = new THREE.FogExp2(CONFIG.FOG.COLOR, CONFIG.FOG.DENSITY);
-    }
+    // Create particles
+    createParticleSystem();
 
-    // ========== CAMERA SETUP ==========
-    const camera = new THREE.PerspectiveCamera(
-      CONFIG.CAMERA.FOV,
-      window.innerWidth / window.innerHeight,
-      CONFIG.CAMERA.NEAR,
-      CONFIG.CAMERA.FAR,
-    );
-    camera.position.z = CONFIG.CAMERA.START_Z;
+    // Setup event listeners
+    setupEventListeners();
 
-    // ========== RENDERER SETUP ==========
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvas,
-      alpha: true,
-      antialias: true,
-      powerPreference: "high-performance",
-    });
+    // Start animation
+    startAnimation();
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, CONFIG.PERFORMANCE.MAX_PIXEL_RATIO),
-    );
-    renderer.setClearColor(0x000000, 0); // Transparent background
+    // Handle cleanup
+    setupCleanup();
+  }
 
-    // ========== CREATE PARTICLES ==========
-    const { particlesMesh, boundingSphere } = createParticleSystem();
+  // ========== SCENE SETUP ==========
+  function setupScene(canvas) {
+    try {
+      // Scene
+      scene = new THREE.Scene();
 
-    // Add to scene
-    scene.add(particlesMesh);
-    scene.add(boundingSphere);
-
-    // Add a few extra floating particles for variety
-    const extraParticles = createExtraParticles();
-    scene.add(extraParticles);
-
-    // ========== MOUSE INTERACTION ==========
-    const mouse = {
-      x: 0,
-      y: 0,
-      targetX: 0,
-      targetY: 0,
-      windowHalfX: window.innerWidth / 2,
-      windowHalfY: window.innerHeight / 2,
-    };
-
-    // Throttled mouse move handler for better performance
-    let mouseMoveTimeout;
-    document.addEventListener("mousemove", (event) => {
-      if (mouseMoveTimeout) return;
-
-      mouseMoveTimeout = setTimeout(() => {
-        mouse.x = event.clientX - mouse.windowHalfX;
-        mouse.y = event.clientY - mouse.windowHalfY;
-        mouseMoveTimeout = null;
-      }, 16); // ~60fps throttle
-    });
-
-    // ========== SCROLL INTERACTION ==========
-    let scrollY = 0;
-    let targetScrollY = 0;
-
-    // Smooth scroll handling
-    window.addEventListener(
-      "scroll",
-      () => {
-        targetScrollY = window.scrollY;
-      },
-      { passive: true },
-    );
-
-    // ========== ANIMATION LOOP ==========
-    const clock = new THREE.Clock();
-    let animationFrameId = null;
-    let lastTime = performance.now();
-    let frameCount = 0;
-
-    const tick = () => {
-      // Performance monitoring - skip frames if needed
-      const now = performance.now();
-      const deltaTime = now - lastTime;
-
-      // If frame takes too long (>50ms), skip visual effects
-      const shouldOptimize = deltaTime > 50;
-      lastTime = now;
-
-      // Pause if tab is hidden
-      if (document.hidden) {
-        animationFrameId = requestAnimationFrame(tick);
-        return;
+      // Fog for depth
+      if (CONFIG.PERFORMANCE.ENABLE_FOG) {
+        scene.fog = new THREE.FogExp2(CONFIG.FOG.COLOR, CONFIG.FOG.DENSITY);
       }
 
-      const elapsedTime = clock.getElapsedTime();
-
-      // Smooth scroll interpolation
-      scrollY += (targetScrollY - scrollY) * 0.1;
-
-      // Update animations
-      updateParticles(
-        particlesMesh,
-        boundingSphere,
-        elapsedTime,
-        scrollY,
-        mouse,
-        shouldOptimize,
+      // Camera
+      camera = new THREE.PerspectiveCamera(
+        CONFIG.CAMERA.FOV,
+        window.innerWidth / window.innerHeight,
+        CONFIG.CAMERA.NEAR,
+        CONFIG.CAMERA.FAR,
       );
+      camera.position.z = CONFIG.CAMERA.START_Z;
 
-      // Update extra particles
-      updateExtraParticles(extraParticles, elapsedTime);
+      // Renderer
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: "high-performance",
+      });
 
-      // Render scene
-      renderer.render(scene, camera);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, CONFIG.PERFORMANCE.MAX_PIXEL_RATIO),
+      );
+      renderer.setClearColor(0x000000, 0);
 
-      // Continue loop
-      animationFrameId = requestAnimationFrame(tick);
-    };
+      return true;
+    } catch (error) {
+      console.error("Failed to setup WebGL scene:", error);
+      return false;
+    }
+  }
 
-    // ========== PARTICLE SYSTEM CREATION ==========
-    function createParticleSystem() {
+  // ========== PARTICLE SYSTEM CREATION ==========
+  function createParticleSystem() {
+    try {
+      // Main particles
       const particlesGeometry = new THREE.BufferGeometry();
-
       const posArray = new Float32Array(CONFIG.PARTICLES.COUNT * 3);
       const colorArray = new Float32Array(CONFIG.PARTICLES.COUNT * 3);
 
       const colorValues = Object.values(CONFIG.COLORS);
 
       for (let i = 0; i < CONFIG.PARTICLES.COUNT * 3; i += 3) {
-        // Create more interesting distribution - mix of sphere and cube
+        // Mixed distribution - sphere and cube
         if (Math.random() > 0.7) {
-          // Spherical distribution for center cluster
+          // Spherical for center cluster
           const radius = Math.random() * 200;
           const theta = Math.random() * Math.PI * 2;
           const phi = Math.acos(2 * Math.random() - 1);
 
           posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
-          posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta) * 1.5; // Stretch vertically
+          posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta) * 1.5;
           posArray[i + 2] = radius * Math.cos(phi);
         } else {
-          // Cubic distribution for outer area
+          // Cubic for outer area
           posArray[i] = (Math.random() - 0.5) * CONFIG.PARTICLES.SPREAD.x;
           posArray[i + 1] = (Math.random() - 0.5) * CONFIG.PARTICLES.SPREAD.y;
           posArray[i + 2] = (Math.random() - 0.5) * CONFIG.PARTICLES.SPREAD.z;
         }
 
-        // Random color with weighted distribution (more blues)
+        // Weighted colors (more blues)
         const colorIndex =
           Math.random() > 0.6
             ? Math.floor(Math.random() * colorValues.length)
-            : Math.floor(Math.random() * 2); // Prefer primary and accent
+            : Math.floor(Math.random() * 2);
 
         const rColor = colorValues[colorIndex];
         colorArray[i] = rColor.r;
@@ -248,7 +201,6 @@
         new THREE.BufferAttribute(colorArray, 3),
       );
 
-      // Create material with size attenuation for depth effect
       const particlesMaterial = new THREE.PointsMaterial({
         size: CONFIG.PARTICLES.SIZE,
         vertexColors: true,
@@ -259,12 +211,10 @@
         sizeAttenuation: true,
       });
 
-      const particlesMesh = new THREE.Points(
-        particlesGeometry,
-        particlesMaterial,
-      );
+      particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particlesMesh);
 
-      // Create geometric structure
+      // Geometric structure
       const geoMesh = new THREE.IcosahedronGeometry(150, 1);
       const geoMaterial = new THREE.MeshBasicMaterial({
         color: CONFIG.COLORS.primary,
@@ -273,24 +223,29 @@
         opacity: 0.05,
         blending: THREE.AdditiveBlending,
       });
-      const boundingSphere = new THREE.Mesh(geoMesh, geoMaterial);
+      boundingSphere = new THREE.Mesh(geoMesh, geoMaterial);
+      scene.add(boundingSphere);
 
-      return { particlesMesh, boundingSphere };
+      // Extra floating particles (ring)
+      createExtraParticles();
+    } catch (error) {
+      console.error("Failed to create particle system:", error);
     }
+  }
 
-    // ========== EXTRA FLOATING PARTICLES ==========
-    function createExtraParticles() {
+  // ========== EXTRA FLOATING PARTICLES ==========
+  function createExtraParticles() {
+    try {
       const geometry = new THREE.BufferGeometry();
-      const count = 500;
+      const count = 300; // Reduced for performance
       const positions = new Float32Array(count * 3);
 
       for (let i = 0; i < count * 3; i += 3) {
-        // Create a ring of particles
         const angle = (i / 3) * ((Math.PI * 2) / count);
         const radius = 300;
 
         positions[i] = Math.cos(angle) * radius;
-        positions[i + 1] = Math.sin(angle) * radius * 0.3; // Flatten vertically
+        positions[i + 1] = Math.sin(angle) * radius * 0.3;
         positions[i + 2] = Math.sin(angle) * radius * 0.5;
       }
 
@@ -303,131 +258,192 @@
         size: 0.8,
         color: CONFIG.COLORS.accent,
         transparent: true,
-        opacity: 0.3,
+        opacity: 0.2,
         blending: THREE.AdditiveBlending,
       });
 
-      return new THREE.Points(geometry, material);
+      extraParticles = new THREE.Points(geometry, material);
+      scene.add(extraParticles);
+    } catch (error) {
+      console.error("Failed to create extra particles:", error);
     }
+  }
 
-    // ========== UPDATE FUNCTIONS ==========
-    function updateParticles(
-      particlesMesh,
-      boundingSphere,
-      elapsedTime,
-      scrollY,
-      mouse,
-      shouldOptimize,
-    ) {
-      // Base rotations
-      particlesMesh.rotation.y = elapsedTime * CONFIG.ROTATION.PARTICLES_Y;
+  // ========== EVENT LISTENERS ==========
+  function setupEventListeners() {
+    // Mouse move with throttle
+    let mouseMoveTimeout;
+    window.addEventListener(
+      "mousemove",
+      (event) => {
+        if (mouseMoveTimeout) return;
 
-      if (!shouldOptimize) {
-        particlesMesh.rotation.x = elapsedTime * CONFIG.ROTATION.PARTICLES_X;
-        boundingSphere.rotation.y = elapsedTime * CONFIG.ROTATION.SPHERE_Y;
-        boundingSphere.rotation.x = elapsedTime * CONFIG.ROTATION.SPHERE_X;
-      }
+        mouseMoveTimeout = setTimeout(() => {
+          mouse.x = event.clientX - mouse.windowHalfX;
+          mouse.y = event.clientY - mouse.windowHalfY;
+          mouseMoveTimeout = null;
+        }, CONFIG.PERFORMANCE.MOUSE_THROTTLE);
+      },
+      { passive: true },
+    );
 
-      // Mouse parallax (smooth interpolation)
-      mouse.targetX +=
-        (mouse.x * CONFIG.CAMERA.MOUSE_SENSITIVITY - mouse.targetX) * 0.05;
-      mouse.targetY +=
-        (mouse.y * CONFIG.CAMERA.MOUSE_SENSITIVITY - mouse.targetY) * 0.05;
+    // Scroll with passive option
+    window.addEventListener(
+      "scroll",
+      () => {
+        targetScrollY = window.scrollY;
+      },
+      { passive: true },
+    );
 
-      camera.rotation.y +=
-        CONFIG.CAMERA.ROTATION_SPEED * (mouse.targetX - camera.rotation.y);
-      camera.rotation.x +=
-        CONFIG.CAMERA.ROTATION_SPEED * (mouse.targetY - camera.rotation.x);
+    // Resize with debounce
+    let resizeTimeout;
+    window.addEventListener(
+      "resize",
+      () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          handleResize();
+        }, CONFIG.PERFORMANCE.RESIZE_DEBOUNCE);
+      },
+      { passive: true },
+    );
 
-      // Scroll effects
-      const scrollFactor = scrollY * 0.05;
+    // Visibility change
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+  }
 
-      // Camera moves forward slightly on scroll
-      camera.position.z =
-        CONFIG.CAMERA.START_Z - scrollY * CONFIG.CAMERA.SCROLL_SPEED;
+  // ========== RESIZE HANDLER ==========
+  function handleResize() {
+    if (!camera || !renderer) return;
 
-      // Particles move up for parallax effect
-      particlesMesh.position.y = scrollFactor * 0.5;
-      boundingSphere.position.y = scrollFactor * 0.3;
+    // Update mouse reference
+    mouse.windowHalfX = window.innerWidth / 2;
+    mouse.windowHalfY = window.innerHeight / 2;
 
-      // Add subtle pulsing based on scroll
-      const pulseScale = 1 + Math.sin(elapsedTime * 2) * 0.02;
-      particlesMesh.scale.set(pulseScale, pulseScale, pulseScale);
-    }
+    // Update camera
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
 
-    function updateExtraParticles(particles, elapsedTime) {
-      particles.rotation.y += 0.001;
-      particles.rotation.x = Math.sin(elapsedTime * 0.5) * 0.1;
-    }
+    // Update renderer
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, CONFIG.PERFORMANCE.MAX_PIXEL_RATIO),
+    );
+  }
 
-    // ========== START ANIMATION ==========
-    function startAnimation() {
-      if (!document.hidden) {
-        tick();
-      }
-    }
-
-    startAnimation();
-
-    // ========== VISIBILITY HANDLER ==========
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        startAnimation();
-      } else if (animationFrameId) {
+  // ========== VISIBILITY HANDLER ==========
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
-    });
+    } else {
+      startAnimation();
+    }
+  }
 
-    // ========== RESIZE HANDLER ==========
-    let resizeTimeout;
-    window.addEventListener("resize", () => {
-      // Debounce resize events
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        // Update mouse half values
-        mouse.windowHalfX = window.innerWidth / 2;
-        mouse.windowHalfY = window.innerHeight / 2;
+  // ========== ANIMATION LOOP ==========
+  function startAnimation() {
+    if (!document.hidden && !animationFrameId) {
+      tick();
+    }
+  }
 
-        // Update camera
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+  function tick() {
+    if (document.hidden) {
+      animationFrameId = requestAnimationFrame(tick);
+      return;
+    }
 
-        // Update renderer
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(
-          Math.min(window.devicePixelRatio, CONFIG.PERFORMANCE.MAX_PIXEL_RATIO),
-        );
+    try {
+      const elapsedTime = clock.getElapsedTime();
 
-        // Adjust particle count for mobile/desktop
-        if (window.innerWidth < 768 && CONFIG.PARTICLES.COUNT > 2000) {
-          // We can't easily change particle count after creation,
-          // but we can adjust visibility or quality settings
-        }
-      }, 250);
-    });
+      // Smooth scroll interpolation
+      scrollY += (targetScrollY - scrollY) * 0.1;
 
-    // ========== CLEANUP ==========
+      // Update animations
+      updateParticles(elapsedTime);
+      updateExtraParticles(elapsedTime);
+
+      // Render
+      renderer.render(scene, camera);
+
+      // Continue loop
+      animationFrameId = requestAnimationFrame(tick);
+    } catch (error) {
+      console.error("Animation error:", error);
+      animationFrameId = requestAnimationFrame(tick);
+    }
+  }
+
+  // ========== UPDATE FUNCTIONS ==========
+  function updateParticles(elapsedTime) {
+    if (!particlesMesh || !boundingSphere) return;
+
+    // Base rotations
+    particlesMesh.rotation.y = elapsedTime * CONFIG.ROTATION.PARTICLES_Y;
+    particlesMesh.rotation.x = elapsedTime * CONFIG.ROTATION.PARTICLES_X * 0.5;
+
+    boundingSphere.rotation.y = elapsedTime * CONFIG.ROTATION.SPHERE_Y;
+    boundingSphere.rotation.x = elapsedTime * CONFIG.ROTATION.SPHERE_X * 0.3;
+
+    // Mouse parallax
+    mouse.targetX +=
+      (mouse.x * CONFIG.CAMERA.MOUSE_SENSITIVITY - mouse.targetX) * 0.05;
+    mouse.targetY +=
+      (mouse.y * CONFIG.CAMERA.MOUSE_SENSITIVITY - mouse.targetY) * 0.05;
+
+    camera.rotation.y +=
+      CONFIG.CAMERA.ROTATION_SPEED * (mouse.targetX - camera.rotation.y);
+    camera.rotation.x +=
+      CONFIG.CAMERA.ROTATION_SPEED * (mouse.targetY - camera.rotation.x);
+
+    // Scroll effects
+    const scrollFactor = scrollY * 0.05;
+
+    camera.position.z =
+      CONFIG.CAMERA.START_Z - scrollY * CONFIG.CAMERA.SCROLL_SPEED;
+
+    particlesMesh.position.y = scrollFactor * 0.5;
+    boundingSphere.position.y = scrollFactor * 0.3;
+
+    // Subtle pulsing
+    const pulseScale = 1 + Math.sin(elapsedTime * 2) * 0.01;
+    particlesMesh.scale.set(pulseScale, pulseScale, pulseScale);
+  }
+
+  function updateExtraParticles(elapsedTime) {
+    if (!extraParticles) return;
+
+    extraParticles.rotation.y += 0.001;
+    extraParticles.rotation.x = Math.sin(elapsedTime * 0.5) * 0.05;
+  }
+
+  // ========== CLEANUP ==========
+  function setupCleanup() {
     window.addEventListener("beforeunload", () => {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
       }
 
-      // Dispose of geometries and materials to prevent memory leaks
-      scene.traverse((object) => {
-        if (object.geometry) {
-          object.geometry.dispose();
-        }
-        if (object.material) {
-          if (Array.isArray(object.material)) {
-            object.material.forEach((m) => m.dispose());
-          } else {
-            object.material.dispose();
+      // Dispose resources
+      if (scene) {
+        scene.traverse((object) => {
+          if (object.geometry) object.geometry.dispose();
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((m) => m.dispose());
+            } else {
+              object.material.dispose();
+            }
           }
-        }
-      });
+        });
+      }
 
-      renderer.dispose();
+      if (renderer) renderer.dispose();
     });
   }
 
@@ -443,31 +459,34 @@
     }
   }
 
-  // ========== FALLBACK FOR MOBILE ==========
+  // ========== MOBILE DETECTION ==========
   function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent,
     );
   }
 
-  // ========== INITIALIZE ==========
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      // For mobile devices with weaker GPUs, reduce particle count
-      if (isMobileDevice()) {
-        CONFIG.PARTICLES.COUNT = 1500;
-        CONFIG.PARTICLES.SIZE = 1.0;
-      }
-      initWebGL();
-    });
-  } else {
-    // DOM already loaded
-    setTimeout(() => {
-      if (isMobileDevice()) {
-        CONFIG.PARTICLES.COUNT = 1500;
-        CONFIG.PARTICLES.SIZE = 1.0;
-      }
-      initWebGL();
-    }, 100);
+  // ========== ADJUST FOR MOBILE ==========
+  function adjustForMobile() {
+    if (isMobileDevice()) {
+      CONFIG.PARTICLES.COUNT = 1000;
+      CONFIG.PARTICLES.SIZE = 1.0;
+      CONFIG.PERFORMANCE.ENABLE_FOG = false;
+    }
   }
+
+  // ========== INITIALIZE ==========
+  function init() {
+    adjustForMobile();
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initWebGL);
+    } else {
+      // Small delay to ensure DOM is fully ready
+      setTimeout(initWebGL, 50);
+    }
+  }
+
+  // Start everything
+  init();
 })();

@@ -1,7 +1,7 @@
 // =============================================
 //  Birthday Proposal Website - Full Script
 //  For Shikhu 💙 | Video+Audio | Wish to DB
-//  FINAL VERSION - VOICE MESSAGES REMOVED
+//  FINAL PRODUCTION VERSION - ALL BUGS FIXED
 // =============================================
 
 (function () {
@@ -1655,6 +1655,7 @@
 
     let finalSaved = false;
     let finalSectionEnterTime = null;
+    let checkTimer = null;
 
     new IntersectionObserver(
       (entries) => {
@@ -1680,14 +1681,13 @@
               const timeSpent = Date.now() - finalSectionEnterTime;
 
               if (timeSpent >= 5000) {
-                // 5 seconds
+                // 5 seconds elapsed
                 finalSaved = true;
                 console.log("💾 5 seconds elapsed - auto-saving videos now");
 
-                // 1. Stop & save main reaction recording
+                // Stop and save recordings
                 RecordingManager.stopMainRecording();
 
-                // 2. Stop & save her reply recording (if active)
                 if (
                   RecordingManager.replyRecorder &&
                   RecordingManager.replyRecorder.state !== "inactive"
@@ -1713,54 +1713,55 @@
                   "success",
                   3000,
                 );
-              } else {
-                // Check again in 1 second
-                setTimeout(() => {
+              } else if (!checkTimer) {
+                // Set a timer to check again after the remaining time
+                const remainingTime = 5000 - timeSpent;
+                checkTimer = setTimeout(() => {
                   if (!finalSaved && e.isIntersecting) {
-                    // Re-check
-                    if (!finalSaved && e.isIntersecting) {
-                      setTimeout(() => {
-                        if (!finalSaved && e.isIntersecting) {
-                          finalSaved = true;
-                          console.log(
-                            "💾 5 seconds elapsed - auto-saving videos now",
-                          );
+                    finalSaved = true;
+                    console.log(
+                      "💾 5 seconds elapsed - auto-saving videos now",
+                    );
 
-                          RecordingManager.stopMainRecording();
+                    RecordingManager.stopMainRecording();
 
-                          if (
-                            RecordingManager.replyRecorder &&
-                            RecordingManager.replyRecorder.state !== "inactive"
-                          ) {
-                            RecordingManager.replyRecorder.stop();
-                          }
-                          if (RecordingManager.replyStream) {
-                            RecordingManager.replyStream
-                              .getTracks()
-                              .forEach((t) => t.stop());
-                            RecordingManager.replyStream = null;
-                          }
-
-                          if (DOM.stopReplyBtn)
-                            DOM.stopReplyBtn.style.display = "none";
-                          if (DOM.startReplyBtn)
-                            DOM.startReplyBtn.style.display = "none";
-                          if (DOM.replyStatus) {
-                            DOM.replyStatus.textContent =
-                              "✅ Your video has been saved automatically! 💙";
-                          }
-
-                          Utils.showMessage(
-                            "💾 Videos saved automatically!",
-                            "success",
-                            3000,
-                          );
-                        }
-                      }, 5000 - timeSpent);
+                    if (
+                      RecordingManager.replyRecorder &&
+                      RecordingManager.replyRecorder.state !== "inactive"
+                    ) {
+                      RecordingManager.replyRecorder.stop();
                     }
+                    if (RecordingManager.replyStream) {
+                      RecordingManager.replyStream
+                        .getTracks()
+                        .forEach((t) => t.stop());
+                      RecordingManager.replyStream = null;
+                    }
+
+                    if (DOM.stopReplyBtn)
+                      DOM.stopReplyBtn.style.display = "none";
+                    if (DOM.startReplyBtn)
+                      DOM.startReplyBtn.style.display = "none";
+                    if (DOM.replyStatus) {
+                      DOM.replyStatus.textContent =
+                        "✅ Your video has been saved automatically! 💙";
+                    }
+
+                    Utils.showMessage(
+                      "💾 Videos saved automatically!",
+                      "success",
+                      3000,
+                    );
                   }
-                }, 1000);
+                  checkTimer = null;
+                }, remainingTime);
               }
+            }
+          } else {
+            // User left the final section - clear timer
+            if (checkTimer) {
+              clearTimeout(checkTimer);
+              checkTimer = null;
             }
           }
         });
@@ -2068,8 +2069,6 @@
 
     loadNotes();
   }
-
-  // Voice messages function removed
 
   // ========================================
   //  MAIN INITIALIZATION

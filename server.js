@@ -1,7 +1,7 @@
 // =============================================
 //  Backend Server - Video + Wish Storage
 //  For Shikhu's Birthday 💙
-//  Optimized Production Version
+//  FINAL PRODUCTION VERSION - ALL BUGS FIXED
 // =============================================
 
 require("dotenv").config();
@@ -111,6 +111,11 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Serve uploads folder statically (for local storage fallback)
 app.use("/uploads", express.static(uploadsDir));
+
+// Handle favicon requests gracefully (fixes 404 error)
+app.get("/favicon.ico", (req, res) => {
+  res.status(204).end();
+});
 
 // ========== DATABASE CONFIG (MongoDB) ==========
 const isDBConfigured = !!process.env.MONGODB_URI;
@@ -635,22 +640,23 @@ app.get("/dashboard", (req, res) => {
   } else {
     // If not, create a simple dashboard
     res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Dashboard</title>
-                <style>
-                    body { font-family: Arial; background: #0a0e1a; color: white; padding: 20px; }
-                    h1 { color: #00d4ff; }
-                </style>
-            </head>
-            <body>
-                <h1>💙 Dashboard Placeholder</h1>
-                <p>Create a dashboard.html file in the public folder for full functionality.</p>
-                <p>API is working! <a href="/api/health">Check health</a></p>
-            </body>
-            </html>
-        `);
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Dashboard</title>
+          <style>
+              body { font-family: Arial; background: #0a0e1a; color: white; padding: 20px; }
+              h1 { color: #00d4ff; }
+              a { color: #1e90ff; }
+          </style>
+      </head>
+      <body>
+          <h1>💙 Shikhu's Dashboard</h1>
+          <p>Dashboard file not found. Please ensure dashboard.html exists in the public folder.</p>
+          <p>API is working! <a href="/api/health">Check health</a></p>
+      </body>
+      </html>
+    `);
   }
 });
 
