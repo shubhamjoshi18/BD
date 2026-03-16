@@ -4,10 +4,40 @@
     {
       "src": "server.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
     }
   ],
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "server.js" },
-    { "source": "/dashboard", "destination": "/dashboard.html" }
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/public/dashboard.html"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/public/assets/$1"
+    },
+    {
+      "src": "/(.*)\\.(js|css|svg|ico|json)",
+      "dest": "/public/$1.$2"
+    },
+    {
+      "src": "/(.*)\\.(png|jpg|jpeg|gif|webp|mp3|mp4|webm)",
+      "dest": "/public/$1.$2"
+    },
+    {
+      "src": "/",
+      "dest": "/public/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
   ]
 }
