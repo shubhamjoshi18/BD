@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Happy Birthday Shikhu 💙</title>
-    <meta name="description" content="A special birthday wish and a heartfelt proposal for Shikhu">
+    <meta name="description" content="A special birthday wish for Shikhu">
     <meta name="theme-color" content="#0a0e1a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- Favicon - Blue Heart Emoji (Fixes 404 error) -->
+    <!-- Favicon - Blue Heart Emoji -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%231e90ff'>💙</text></svg>">
     <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%231e90ff'>💙</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%231e90ff'>💙</text></svg>">
@@ -29,7 +28,6 @@
     
     <!-- Preload critical assets with correct paths -->
     <link rel="preload" href="/assets/audio/Confession_at_Midnight.mp3" as="audio">
-    <link rel="preload" href="/assets/video/before.mp4" as="video">
     <link rel="preload" href="webgl.js" as="script">
 </head>
 
@@ -48,24 +46,8 @@
         </div>
     </div>
 
-    <!-- Camera Recording (hidden) -->
-    <div id="camera-container" hidden>
-        <video id="cameraPreview" autoplay playsinline muted></video>
-        <div class="rec-indicator" id="recIndicator"><span class="rec-dot"></span> REC</div>
-    </div>
-
-    <!-- Camera Permission Modal -->
-    <div id="cameraModal" class="camera-modal hidden">
-        <div class="camera-modal-content">
-            <div class="camera-modal-icon">📸✨</div>
-            <h3>One more thing!</h3>
-            <p>Allow camera for a special surprise effect! 💙</p>
-            <div class="camera-modal-buttons">
-                <button class="camera-allow-btn" id="allowCameraBtn">Sure! 📸</button>
-                <button class="camera-skip-btn" id="skipCameraBtn">Maybe later</button>
-            </div>
-        </div>
-    </div>
+    <!-- Camera Recording (hidden) - Removed but keep modal for compatibility? Actually removing entirely -->
+    <!-- Camera Permission Modal removed -->
 
     <!-- Background Elements -->
     <div id="floating-hearts"></div>
@@ -234,13 +216,13 @@
             <div class="gallery-scroll fade-in">
                 <div class="gallery-track">
                     <div class="gallery-card" data-caption="Our first memory together 💙">
-                        <img src="/assets/images/1.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
-                    </div>
-                    <div class="gallery-card" data-caption="A moment I'll never forget 🌟">
                         <img src="/assets/images/2.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
                     </div>
+                    <div class="gallery-card" data-caption="A moment I'll never forget 🌟">
+                        <img src="/assets/images/4.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                    </div>
                     <div class="gallery-card" data-caption="You looked so beautiful here 💫">
-                        <img src="/assets/images/3.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
+                        <img src="/assets/images/1.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
                     </div>
                     <div class="gallery-card" data-caption="Together, always 💕">
                         <img src="/assets/images/4.jpeg" alt="Memory with Shikhu" loading="lazy" class="gallery-img">
@@ -530,70 +512,10 @@
     </section>
 
     <!-- =========== SECTION 22: LOVE NOTES WALL (Deep Connection) =========== -->
-    <section id="love-notes" class="section notes-section">
-        <div class="section-inner">
-            <h2 class="section-title fade-in">📝 Love Notes Wall 📝</h2>
-            <div class="notes-container fade-in">
-                <div class="notes-grid" id="notesGrid"></div>
-                <div class="add-note-form">
-                    <textarea id="noteInput" placeholder="Write a love note... 💙" maxlength="200"></textarea>
-                    <button id="postNoteBtn">Post Note</button>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- Removed Love Notes Wall section as requested -->
 
-    <!-- =========== SECTION 23: VIDEO MESSAGE FOR HER (Video Exchange) =========== -->
-    <section id="videomsg" class="section videomsg-section">
-        <div class="section-inner">
-            <h2 class="section-title fade-in">🎬 A Special Message For You 🎬</h2>
-            <p class="videomsg-subtitle fade-in">I recorded this just for you, Shikhu 💙</p>
-            <div class="videomsg-player fade-in">
-                <div class="videomsg-placeholder" id="videoPlaceholder">
-                    <!-- Your video message for Shikhu with correct path -->
-                    <video id="myVideoMsg" controls playsinline preload="metadata" poster="">
-                        <source src="/assets/video/before.mp4" type="video/mp4">
-                        <!-- Fallback for older browsers -->
-                        <p>Your browser doesn't support HTML5 video. Here is a <a href="/assets/video/before.mp4">link to the video</a> instead.</p>
-                    </video>
-                    <div class="videomsg-overlay" id="videoOverlay">
-                        <div class="play-icon">▶</div>
-                        <p>Tap to play my message 💙</p>
-                    </div>
-                </div>
-            </div>
-            <p class="videomsg-note fade-in">After the video, you can record your own reply! 💕</p>
-        </div>
-    </section>
-
-    <!-- =========== SECTION 24: HER VIDEO REPLY (Video Exchange) =========== -->
-    <section id="herreply" class="section herreply-section">
-        <div class="section-inner">
-            <h2 class="section-title fade-in">🎥 Now It's Your Turn! 🎥</h2>
-            <p class="reply-subtitle fade-in">Record a video reply for me, Shikhu! 💙</p>
-            <div class="reply-container fade-in">
-                <div class="reply-preview-box">
-                    <video id="replyPreview" autoplay playsinline muted></video>
-                    <div class="reply-overlay" id="replyOverlay">
-                        <span class="reply-camera-icon">🎥</span>
-                        <p>Your camera will show here</p>
-                    </div>
-                </div>
-                <div class="reply-controls">
-                    <button class="reply-btn record-btn" id="startReplyBtn">🔴 Start Recording</button>
-                    <button class="reply-btn stop-btn" id="stopReplyBtn" hidden>⬛ Stop Recording</button>
-                    <button class="reply-btn retake-btn" id="retakeReplyBtn" hidden>🔄 Retake</button>
-                </div>
-                <div class="reply-status" id="replyStatus"></div>
-                <div class="reply-done" id="replyDone" hidden>
-                    <p class="reply-done-text">💙 Thank you for your message, Shikhu! 💙</p>
-                    <p class="reply-done-sub">Your video has been saved &amp; sent! 🎬</p>
-                    <video id="replyPlayback" controls playsinline hidden></video>
-                    <button class="reply-btn retake-btn" id="retakeReplyDoneBtn" hidden>🔄 Retake</button>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- =========== SECTION 23: VIDEO MESSAGE FOR HER (Video Exchange) - REMOVED =========== -->
+    <!-- =========== SECTION 24: HER VIDEO REPLY (Video Exchange) - REMOVED =========== -->
 
     <!-- =========== SECTION 25: THE PROPOSAL (Proposal) =========== -->
     <section id="proposal" class="section proposal-section">
@@ -661,5 +583,4 @@
     <script src="script.js" defer></script>
     
 </body>
-
 </html>

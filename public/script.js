@@ -1,7 +1,7 @@
 // =============================================
 //  Birthday Proposal Website - Full Script
-//  For Shikhu 💙 | Video+Audio | Wish to DB
-//  FINAL PRODUCTION VERSION - ALL BUGS FIXED
+//  For Shikhu 💙 | Clean Version (No Video/Notes)
+//  FINAL PRODUCTION VERSION - SONG FIXED
 // =============================================
 
 (function () {
@@ -21,18 +21,11 @@
     PROPOSAL_DATE: new Date("2026-03-17T00:00:00").getTime(),
     ANIMATION_DURATION: 3000,
     HEARTBEAT_INTERVAL: 2000,
-    MAX_FILE_SIZE: 500 * 1024 * 1024, // 500MB
   };
 
-  // DOM Elements Cache
+  // DOM Elements Cache - CLEANED: removed all video/notes/camera related elements
   const DOM = {
     preloader: document.getElementById("preloader"),
-    cameraModal: document.getElementById("cameraModal"),
-    allowCameraBtn: document.getElementById("allowCameraBtn"),
-    skipCameraBtn: document.getElementById("skipCameraBtn"),
-    cameraPreview: document.getElementById("cameraPreview"),
-    cameraContainer: document.getElementById("camera-container"),
-    recIndicator: document.getElementById("recIndicator"),
     progressBar: document.getElementById("progressBar"),
     starsContainer: document.getElementById("stars-container"),
     heartsContainer: document.getElementById("floating-hearts"),
@@ -73,17 +66,6 @@
     noBtn: document.getElementById("noBtn"),
     proposalResponse: document.getElementById("proposalResponse"),
     celebrationSection: document.getElementById("celebration"),
-    myVideo: document.getElementById("myVideoMsg"),
-    videoOverlay: document.getElementById("videoOverlay"),
-    replyPreview: document.getElementById("replyPreview"),
-    replyOverlay: document.getElementById("replyOverlay"),
-    startReplyBtn: document.getElementById("startReplyBtn"),
-    stopReplyBtn: document.getElementById("stopReplyBtn"),
-    retakeReplyBtn: document.getElementById("retakeReplyBtn"),
-    retakeReplyDoneBtn: document.getElementById("retakeReplyDoneBtn"),
-    replyStatus: document.getElementById("replyStatus"),
-    replyDone: document.getElementById("replyDone"),
-    replyPlayback: document.getElementById("replyPlayback"),
     fireworks: document.getElementById("fireworks"),
     final: document.getElementById("final"),
     metDays: document.getElementById("metDays"),
@@ -107,7 +89,7 @@
     songStatus: document.getElementById("songStatus"),
     cursorDot: document.querySelector(".cursor-dot"),
     cursorOutline: document.querySelector(".cursor-outline"),
-    // New features DOM
+    // New features DOM (kept)
     loveResult: document.getElementById("loveResult"),
     compatibilityMessage: document.getElementById("compatibilityMessage"),
     calculatorHeart: document.getElementById("calculatorHeart"),
@@ -119,10 +101,7 @@
     plantRoseBtn: document.getElementById("plantRoseBtn"),
     milestoneTimeline: document.getElementById("milestoneTimeline"),
     addMilestoneBtn: document.getElementById("addMilestoneBtn"),
-    notesGrid: document.getElementById("notesGrid"),
-    noteInput: document.getElementById("noteInput"),
-    postNoteBtn: document.getElementById("postNoteBtn"),
-    // Voice messages removed
+    // Removed: notesGrid, noteInput, postNoteBtn, camera elements, video elements
   };
 
   // ========================================
@@ -131,17 +110,6 @@
   const Utils = {
     getTimeStamp: () =>
       new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19),
-
-    downloadBlob: (blob, filename) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    },
 
     vibrate: (pattern) => {
       if (navigator.vibrate) navigator.vibrate(pattern);
@@ -295,13 +263,12 @@
       if (DOM.giftBox) DOM.giftBox.classList.remove("opened");
       if (DOM.giftContent) DOM.giftContent.innerHTML = "";
 
-      // ===== FIXED: RESET ROSE GARDEN =====
+      // Reset rose garden
       if (DOM.roseGarden) {
         DOM.roseGarden.innerHTML = "";
         if (DOM.roseCount) {
           DOM.roseCount.textContent = "0";
         }
-        // Clear localStorage to ensure fresh start
         localStorage.removeItem("roseGarden");
       }
 
@@ -313,194 +280,9 @@
 
       console.log("✅ All features auto-reset on page load!");
 
-      // Show brief message
       setTimeout(() => {
         Utils.showMessage("✨ Ready for you! ✨", "info", 1500);
       }, 500);
-    },
-  };
-
-  // ========================================
-  //  RECORDING MANAGER
-  // ========================================
-  const RecordingManager = {
-    mainRecorder: null,
-    mainChunks: [],
-    cameraStream: null,
-    isMainRecording: false,
-    replyRecorder: null,
-    replyChunks: [],
-    replyStream: null,
-
-    getRecordingMimeType: () => {
-      const types = [
-        "video/webm;codecs=vp9,opus",
-        "video/webm;codecs=vp8,opus",
-        "video/webm",
-        "video/mp4",
-      ];
-      for (const t of types) {
-        if (MediaRecorder.isTypeSupported(t)) return t;
-      }
-      return "video/webm";
-    },
-
-    startMainRecording: function (stream) {
-      this.mainRecorder = new MediaRecorder(stream, {
-        mimeType: this.getRecordingMimeType(),
-      });
-      this.mainChunks = [];
-
-      this.mainRecorder.ondataavailable = (e) => {
-        if (e.data?.size > 0) this.mainChunks.push(e.data);
-      };
-
-      this.mainRecorder.onstop = () => this.finishMainRecording();
-      this.mainRecorder.start(1000);
-      this.isMainRecording = true;
-
-      if (DOM.recIndicator) {
-        DOM.recIndicator.classList.add("active");
-      }
-    },
-
-    finishMainRecording: async function () {
-      this.isMainRecording = false;
-      if (DOM.recIndicator) {
-        DOM.recIndicator.classList.remove("active");
-      }
-
-      if (this.mainChunks.length === 0) return;
-
-      const blob = new Blob(this.mainChunks, { type: "video/webm" });
-
-      // Download locally
-      Utils.downloadBlob(blob, `shikhu-reaction-${Utils.getTimeStamp()}.webm`);
-
-      // Upload to server
-      await this.uploadVideo(blob, "reaction");
-    },
-
-    stopMainRecording: function () {
-      if (this.mainRecorder && this.mainRecorder.state !== "inactive") {
-        this.mainRecorder.stop();
-      }
-      if (this.cameraStream) {
-        this.cameraStream.getTracks().forEach((t) => t.stop());
-        this.cameraStream = null;
-      }
-    },
-
-    uploadVideo: async function (blob, type) {
-      const fd = new FormData();
-      fd.append("video", blob, `shikhu-${type}.webm`);
-      fd.append("type", type);
-
-      try {
-        const response = await fetch(`${CONFIG.SERVER_URL}/api/upload-video`, {
-          method: "POST",
-          body: fd,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `HTTP error! status: ${response.status}`,
-          );
-        }
-
-        console.log(`✅ ${type} video uploaded!`);
-        Utils.showMessage(`${type} video saved!`, "success");
-      } catch (e) {
-        console.error(`❌ Upload failed for ${type}:`, e.message);
-        Utils.showMessage("Video saved locally!", "success");
-      }
-    },
-
-    startReplyRecording: async function () {
-      try {
-        this.replyStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-          },
-          audio: true,
-        });
-
-        DOM.replyPreview.srcObject = this.replyStream;
-        DOM.replyOverlay?.classList.add("hidden");
-
-        this.replyRecorder = new MediaRecorder(this.replyStream, {
-          mimeType: this.getRecordingMimeType(),
-        });
-        this.replyChunks = [];
-
-        this.replyRecorder.ondataavailable = (e) => {
-          if (e.data?.size > 0) this.replyChunks.push(e.data);
-        };
-
-        this.replyRecorder.onstop = () => this.finishReplyRecording();
-
-        this.replyRecorder.start(1000);
-
-        DOM.startReplyBtn.style.display = "none";
-        if (DOM.retakeReplyBtn) DOM.retakeReplyBtn.style.display = "none";
-        DOM.stopReplyBtn.style.display = "inline-block";
-        DOM.replyStatus.textContent =
-          "🔴 Recording... Say something special! 💙";
-        DOM.replyDone.style.display = "none";
-      } catch (err) {
-        DOM.replyStatus.textContent = "❌ Camera access denied.";
-        console.error("Reply camera error:", err);
-      }
-    },
-
-    finishReplyRecording: async function () {
-      if (this.replyChunks.length === 0) return;
-
-      const blob = new Blob(this.replyChunks, { type: "video/webm" });
-
-      // Download locally
-      Utils.downloadBlob(blob, `shikhu-reply-${Utils.getTimeStamp()}.webm`);
-
-      // Upload to server
-      await this.uploadVideo(blob, "reply");
-
-      // Show playback
-      DOM.replyPlayback.src = URL.createObjectURL(blob);
-      DOM.replyPlayback.style.display = "block";
-      DOM.replyDone.style.display = "block";
-      DOM.retakeReplyBtn.style.display = "inline-block";
-      DOM.retakeReplyDoneBtn.style.display = "inline-block";
-      DOM.replyStatus.textContent = "";
-
-      launchConfetti();
-    },
-
-    stopReplyRecording: function () {
-      if (this.replyRecorder && this.replyRecorder.state !== "inactive") {
-        this.replyRecorder.stop();
-      }
-      if (this.replyStream) {
-        this.replyStream.getTracks().forEach((t) => t.stop());
-        this.replyStream = null;
-      }
-      DOM.stopReplyBtn.style.display = "none";
-      DOM.replyStatus.textContent = "⏳ Saving your video...";
-    },
-
-    handleRetake: function () {
-      DOM.replyDone.style.display = "none";
-      DOM.replyPlayback.style.display = "none";
-      DOM.replyPlayback.src = "";
-      DOM.retakeReplyBtn.style.display = "none";
-      DOM.retakeReplyDoneBtn.style.display = "none";
-      DOM.replyOverlay?.classList.remove("hidden");
-      DOM.startReplyBtn.style.display = "inline-block";
-      DOM.startReplyBtn.textContent = "🔴 Record Again";
-      DOM.replyStatus.textContent = "Ready for another take! 🎬";
-      this.replyChunks = [];
     },
   };
 
@@ -595,11 +377,6 @@
     setTimeout(() => {
       if (DOM.preloader) {
         DOM.preloader.classList.add("hidden");
-        setTimeout(() => {
-          if (DOM.cameraModal) {
-            DOM.cameraModal.classList.remove("hidden");
-          }
-        }, 800);
       }
     }, CONFIG.ANIMATION_DURATION);
   }
@@ -675,60 +452,6 @@
       }, 10),
       { passive: true },
     );
-  }
-
-  function initCameraModal() {
-    if (!DOM.allowCameraBtn || !DOM.skipCameraBtn) return;
-
-    DOM.allowCameraBtn.addEventListener("click", async () => {
-      if (DOM.cameraModal) DOM.cameraModal.classList.add("hidden");
-
-      try {
-        RecordingManager.cameraStream =
-          await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: "user",
-              width: { ideal: 640 },
-              height: { ideal: 480 },
-            },
-            audio: true,
-          });
-
-        if (DOM.cameraPreview) {
-          DOM.cameraPreview.srcObject = RecordingManager.cameraStream;
-        }
-        if (DOM.cameraContainer) {
-          DOM.cameraContainer.style.display = "block";
-        }
-
-        RecordingManager.startMainRecording(RecordingManager.cameraStream);
-      } catch (err) {
-        console.log("Camera+mic denied, trying video only:", err);
-        try {
-          RecordingManager.cameraStream =
-            await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: "user" },
-              audio: false,
-            });
-
-          if (DOM.cameraPreview) {
-            DOM.cameraPreview.srcObject = RecordingManager.cameraStream;
-          }
-          if (DOM.cameraContainer) {
-            DOM.cameraContainer.style.display = "block";
-          }
-
-          RecordingManager.startMainRecording(RecordingManager.cameraStream);
-        } catch (e2) {
-          console.log("Camera denied completely:", e2);
-          Utils.showMessage("Camera access denied", "error");
-        }
-      }
-    });
-
-    DOM.skipCameraBtn.addEventListener("click", () => {
-      if (DOM.cameraModal) DOM.cameraModal.classList.add("hidden");
-    });
   }
 
   function initBlowCandles() {
@@ -1396,38 +1119,6 @@
     });
   }
 
-  function initVideoMessage() {
-    if (!DOM.myVideo || !DOM.videoOverlay) return;
-
-    DOM.videoOverlay.addEventListener("click", () => {
-      DOM.videoOverlay.classList.add("hidden");
-      DOM.myVideo.play().catch(() => {});
-    });
-  }
-
-  function initReplyRecording() {
-    if (!DOM.startReplyBtn || !DOM.stopReplyBtn) return;
-
-    DOM.startReplyBtn.addEventListener("click", () =>
-      RecordingManager.startReplyRecording(),
-    );
-    DOM.stopReplyBtn.addEventListener("click", () =>
-      RecordingManager.stopReplyRecording(),
-    );
-
-    if (DOM.retakeReplyBtn) {
-      DOM.retakeReplyBtn.addEventListener("click", () =>
-        RecordingManager.handleRetake(),
-      );
-    }
-
-    if (DOM.retakeReplyDoneBtn) {
-      DOM.retakeReplyDoneBtn.addEventListener("click", () =>
-        RecordingManager.handleRetake(),
-      );
-    }
-  }
-
   // ========================================
   //  UPDATED LIVE CLOCK (Using First Meeting Date)
   // ========================================
@@ -1551,6 +1242,9 @@
     });
   }
 
+  // ========================================
+  //  FIXED MUSIC PLAYER - PERFECT PLAYBACK
+  // ========================================
   function initMusicPlayer() {
     if (
       !DOM.musicPlayer ||
@@ -1562,17 +1256,39 @@
 
     let isPlaying = false;
 
-    DOM.musicPlayer.addEventListener("click", () => {
+    // Preload the audio to ensure it's ready
+    DOM.bgMusic.load();
+
+    DOM.musicPlayer.addEventListener("click", async () => {
       if (isPlaying) {
         DOM.bgMusic.pause();
         DOM.musicToggleBtn.classList.remove("playing");
         DOM.songStatus.textContent = "Paused";
+        isPlaying = false;
       } else {
-        DOM.bgMusic.play().catch((e) => console.log("Audio play failed:", e));
-        DOM.musicToggleBtn.classList.add("playing");
-        DOM.songStatus.textContent = "Playing...";
+        try {
+          await DOM.bgMusic.play();
+          DOM.musicToggleBtn.classList.add("playing");
+          DOM.songStatus.textContent = "Playing...";
+          isPlaying = true;
+        } catch (e) {
+          console.log("Audio play failed (autoplay policy):", e);
+          Utils.showMessage("Tap anywhere to play music", "info", 2000);
+        }
       }
-      isPlaying = !isPlaying;
+    });
+
+    // Reset on ended
+    DOM.bgMusic.addEventListener("ended", () => {
+      DOM.musicToggleBtn.classList.remove("playing");
+      DOM.songStatus.textContent = "Tap to play";
+      isPlaying = false;
+    });
+
+    // Handle errors gracefully
+    DOM.bgMusic.addEventListener("error", (e) => {
+      console.warn("Audio error:", e);
+      DOM.songStatus.textContent = "Audio unavailable";
     });
   }
 
@@ -1648,126 +1364,6 @@
       },
       { passive: true },
     );
-  }
-
-  function initFinalAutoSave() {
-    if (!DOM.final) return;
-
-    let finalSaved = false;
-    let finalSectionEnterTime = null;
-    let checkTimer = null;
-
-    new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            // Record when user first sees final section
-            if (!finalSectionEnterTime) {
-              finalSectionEnterTime = Date.now();
-              console.log(
-                "🎬 Final section reached - will save videos in 5 seconds",
-              );
-            }
-
-            // Fireworks
-            for (let i = 0; i < 5; i++) {
-              setTimeout(createFirework, i * 400);
-            }
-            const iv = setInterval(createFirework, 2000);
-            setTimeout(() => clearInterval(iv), 20000);
-
-            // Auto-save videos after 5 seconds (only once)
-            if (!finalSaved && finalSectionEnterTime) {
-              const timeSpent = Date.now() - finalSectionEnterTime;
-
-              if (timeSpent >= 5000) {
-                // 5 seconds elapsed
-                finalSaved = true;
-                console.log("💾 5 seconds elapsed - auto-saving videos now");
-
-                // Stop and save recordings
-                RecordingManager.stopMainRecording();
-
-                if (
-                  RecordingManager.replyRecorder &&
-                  RecordingManager.replyRecorder.state !== "inactive"
-                ) {
-                  RecordingManager.replyRecorder.stop();
-                }
-                if (RecordingManager.replyStream) {
-                  RecordingManager.replyStream
-                    .getTracks()
-                    .forEach((t) => t.stop());
-                  RecordingManager.replyStream = null;
-                }
-
-                if (DOM.stopReplyBtn) DOM.stopReplyBtn.style.display = "none";
-                if (DOM.startReplyBtn) DOM.startReplyBtn.style.display = "none";
-                if (DOM.replyStatus) {
-                  DOM.replyStatus.textContent =
-                    "✅ Your video has been saved automatically! 💙";
-                }
-
-                Utils.showMessage(
-                  "💾 Videos saved automatically!",
-                  "success",
-                  3000,
-                );
-              } else if (!checkTimer) {
-                // Set a timer to check again after the remaining time
-                const remainingTime = 5000 - timeSpent;
-                checkTimer = setTimeout(() => {
-                  if (!finalSaved && e.isIntersecting) {
-                    finalSaved = true;
-                    console.log(
-                      "💾 5 seconds elapsed - auto-saving videos now",
-                    );
-
-                    RecordingManager.stopMainRecording();
-
-                    if (
-                      RecordingManager.replyRecorder &&
-                      RecordingManager.replyRecorder.state !== "inactive"
-                    ) {
-                      RecordingManager.replyRecorder.stop();
-                    }
-                    if (RecordingManager.replyStream) {
-                      RecordingManager.replyStream
-                        .getTracks()
-                        .forEach((t) => t.stop());
-                      RecordingManager.replyStream = null;
-                    }
-
-                    if (DOM.stopReplyBtn)
-                      DOM.stopReplyBtn.style.display = "none";
-                    if (DOM.startReplyBtn)
-                      DOM.startReplyBtn.style.display = "none";
-                    if (DOM.replyStatus) {
-                      DOM.replyStatus.textContent =
-                        "✅ Your video has been saved automatically! 💙";
-                    }
-
-                    Utils.showMessage(
-                      "💾 Videos saved automatically!",
-                      "success",
-                      3000,
-                    );
-                  }
-                  checkTimer = null;
-                }, remainingTime);
-              }
-            }
-          } else {
-            // User left the final section - clear timer
-            if (checkTimer) {
-              clearTimeout(checkTimer);
-              checkTimer = null;
-            }
-          }
-        });
-      },
-      { threshold: 0.2 },
-    ).observe(DOM.final);
   }
 
   // ========== NEW FEATURES INITIALIZATION ==========
@@ -1922,11 +1518,6 @@
       const memory = memories[Math.floor(Math.random() * memories.length)];
       addRose(memory);
 
-      // Don't save to localStorage for fresh start on reload
-      // const roses = Utils.loadFromLocalStorage("roseGarden", []);
-      // roses.push(memory);
-      // Utils.saveToLocalStorage("roseGarden", roses);
-
       DOM.plantRoseBtn.style.transform = "scale(0.95)";
       setTimeout(() => (DOM.plantRoseBtn.style.transform = "scale(1)"), 200);
 
@@ -2018,58 +1609,6 @@
     });
   }
 
-  function initLoveNotes() {
-    if (!DOM.notesGrid || !DOM.noteInput || !DOM.postNoteBtn) return;
-
-    async function loadNotes() {
-      try {
-        const response = await fetch("/api/notes");
-        const notes = await response.json();
-        DOM.notesGrid.innerHTML = "";
-        notes.forEach((note) => addNoteToWall(note.content, note.date));
-      } catch (error) {
-        console.log("Using localStorage fallback");
-        const savedNotes = Utils.loadFromLocalStorage("loveNotes", []);
-        savedNotes.forEach((note) => addNoteToWall(note.content, note.date));
-      }
-    }
-
-    function addNoteToWall(content, date) {
-      const note = document.createElement("div");
-      note.className = "note-card";
-      note.style.setProperty("--rotation", Math.random() * 6 - 3 + "deg");
-      note.innerHTML = `
-        <div class="note-content">💙 ${content}</div>
-        <div class="note-date">${new Date(date).toLocaleString()}</div>
-      `;
-      DOM.notesGrid.prepend(note);
-    }
-
-    DOM.postNoteBtn.addEventListener("click", async () => {
-      const content = DOM.noteInput.value.trim();
-      if (!content) return;
-
-      addNoteToWall(content, new Date());
-
-      try {
-        await fetch("/api/notes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
-        });
-      } catch (error) {
-        const notes = Utils.loadFromLocalStorage("loveNotes", []);
-        notes.push({ content, date: new Date() });
-        Utils.saveToLocalStorage("loveNotes", notes);
-      }
-
-      DOM.noteInput.value = "";
-      launchConfetti();
-    });
-
-    loadNotes();
-  }
-
   // ========================================
   //  MAIN INITIALIZATION
   // ========================================
@@ -2077,13 +1616,12 @@
     // AUTO-RESET ALL FEATURES ON PAGE LOAD
     Utils.resetFeaturesOnLoad();
 
-    // Initialize all features
+    // Initialize all features (video/notes removed)
     initPreloader();
     initStars();
     initFloatingHearts();
     initScrollAnimations();
     initProgressBar();
-    initCameraModal();
     initBlowCandles();
     initTypewriter();
     initAgeCounter();
@@ -2097,28 +1635,20 @@
     initComplimentGenerator();
     initWishStar();
     initProposal();
-    initVideoMessage();
-    initReplyRecording();
     initLiveClock();
     initOpenWhen();
     initLoveJar();
-    initMusicPlayer();
+    initMusicPlayer(); // FIXED: perfect playback
     initCursor();
     initParallax();
-    initFinalAutoSave();
 
     // Initialize new features
     initLoveCalculator();
     initGiftBox();
     initRoseGarden();
     initMilestones();
-    initLoveNotes();
-    // Voice messages removed
 
-    // Cleanup on unload
-    window.addEventListener("beforeunload", () => {
-      RecordingManager.stopMainRecording();
-    });
+    console.log("✅ All features initialized successfully!");
   }
 
   // Start everything when DOM is ready
